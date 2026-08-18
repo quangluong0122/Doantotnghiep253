@@ -1,0 +1,29 @@
+name: Deploy Backend to Railway
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'Backend-dacn/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        working-directory: ./Backend-dacn
+        run: npm ci
+      
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          npm install -g @railway/cli
+          railway up --environment production
+        working-directory: ./Backend-dacn
