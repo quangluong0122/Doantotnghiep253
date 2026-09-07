@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS attendance (
 -- Salaries Table
 CREATE TABLE IF NOT EXISTS salaries (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  employee_id INT NOT NULL UNIQUE,
+  employee_id INT NOT NULL,
   base_salary DECIMAL(10, 2) NOT NULL,
   allowances DECIMAL(10, 2) DEFAULT 0,
   deductions DECIMAL(10, 2) DEFAULT 0,

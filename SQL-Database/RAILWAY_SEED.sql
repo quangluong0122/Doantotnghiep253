@@ -1,31 +1,72 @@
 -- ============================================================================
--- EMPLOYEE MANAGEMENT SYSTEM - RAILWAY DATABASE SETUP
--- Copy this entire script and run it on your Railway MySQL database
+-- EMPLOYEE MANAGEMENT SYSTEM - MYSQL WORKBENCH / RAILWAY DATABASE SETUP
+-- Run employee_management_db.sql first when the database schema does not exist.
+-- This script can then be run repeatedly to replace all seed data.
 -- ============================================================================
 
 -- ============================================================================
--- STEP 1: Create Database Schema (if not already created)
+-- STEP 1: Select the database
 -- ============================================================================
--- CREATE DATABASE IF NOT EXISTS employee_management_db;
--- USE employee_management_db;
-
--- Uncomment above if database doesn't exist, otherwise just use:
+CREATE DATABASE IF NOT EXISTS employee_management_db;
 USE employee_management_db;
 
--- ============================================================================
--- STEP 2: Delete existing data (CAREFUL - this will delete all data!)
--- ============================================================================
-DELETE FROM work_history;
-DELETE FROM kpis;
-DELETE FROM salaries;
-DELETE FROM attendance;
-DELETE FROM expenses;
-DELETE FROM leaves;
-DELETE FROM employees;
-DELETE FROM users;
+-- Create this table when an older database was created without work history.
+-- Run employee_management_db.sql first for a completely new database.
+CREATE TABLE IF NOT EXISTS work_history (
+	id INT PRIMARY KEY AUTO_INCREMENT,
+	employee_id INT NOT NULL,
+	previous_position VARCHAR(100),
+	current_position VARCHAR(100),
+	previous_department VARCHAR(100),
+	current_department VARCHAR(100),
+	transfer_date DATE,
+	reason TEXT,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);
 
 -- ============================================================================
--- STEP 3: INSERT USERS
+-- STEP 2: Ensure salary history is supported
+-- ============================================================================
+-- Older versions of the schema made employee_id unique in salaries. Remove
+-- that legacy index so the three monthly records below can be inserted.
+SET @salary_unique_index = (
+	SELECT INDEX_NAME
+	FROM information_schema.STATISTICS
+	WHERE TABLE_SCHEMA = DATABASE()
+		AND TABLE_NAME = 'salaries'
+		AND COLUMN_NAME = 'employee_id'
+		AND NON_UNIQUE = 0
+		AND INDEX_NAME <> 'PRIMARY'
+	LIMIT 1
+);
+SET @drop_salary_index = IF(
+	@salary_unique_index IS NULL,
+	'SELECT 1',
+	CONCAT('ALTER TABLE salaries DROP INDEX `', @salary_unique_index, '`')
+);
+PREPARE drop_salary_index_statement FROM @drop_salary_index;
+EXECUTE drop_salary_index_statement;
+DEALLOCATE PREPARE drop_salary_index_statement;
+
+-- ============================================================================
+-- STEP 3: Replace existing data (CAREFUL - this deletes all data!)
+-- ============================================================================
+-- Disabling checks allows every table to be truncated safely and resets all
+-- AUTO_INCREMENT values, so the IDs used by the seed remain consistent.
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE work_history;
+TRUNCATE TABLE kpis;
+TRUNCATE TABLE salaries;
+TRUNCATE TABLE attendance;
+TRUNCATE TABLE expenses;
+TRUNCATE TABLE leaves;
+TRUNCATE TABLE employees;
+TRUNCATE TABLE users;
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- ============================================================================
+-- STEP 4: INSERT USERS
 -- ============================================================================
 -- Test Accounts:
 -- 1. Username: admin, Password: admin123
@@ -41,7 +82,7 @@ VALUES
 ('tranvanb', '$2a$10$K5ZWx6qKJPDd6.HgPf8dF.J8qKF5VjzKLVJmrRCvKIQ8FEQk5gWEC', 'Trần Văn B', 'vanb@company.com', 'employee', NOW(), NOW());
 
 -- ============================================================================
--- STEP 4: INSERT EMPLOYEES
+-- STEP 5: INSERT EMPLOYEES
 -- ============================================================================
 INSERT INTO employees (user_id, employee_id, first_name, last_name, email, phone, department, position, hire_date, salary_grade, status, created_at, updated_at)
 VALUES
@@ -50,7 +91,7 @@ VALUES
 (4, 'EMP003', 'Trần', 'Văn B', 'vanb@company.com', '0983456789', 'Finance', 'Accountant', '2023-03-10', 'Junior', 'active', NOW(), NOW());
 
 -- ============================================================================
--- STEP 5: INSERT LEAVES (30 records total)
+-- STEP 6: INSERT LEAVES (30 records total)
 -- ============================================================================
 INSERT INTO leaves (employee_id, leave_type, start_date, end_date, reason, status, created_at, updated_at)
 VALUES
@@ -91,7 +132,7 @@ VALUES
 (3, 'personal', '2026-04-10', '2026-04-10', 'Personal business', 'approved', NOW(), NOW());
 
 -- ============================================================================
--- STEP 6: INSERT EXPENSES (25 records total)
+-- STEP 7: INSERT EXPENSES (25 records total)
 -- ============================================================================
 INSERT INTO expenses (employee_id, amount, description, category, date, status, created_at, updated_at)
 VALUES
@@ -127,7 +168,7 @@ VALUES
 (3, 5500000, 'Báo cáo ngân hàng', 'Khác', '2026-01-19', 'approved', NOW(), NOW());
 
 -- ============================================================================
--- STEP 7: INSERT SALARIES (9 records)
+-- STEP 8: INSERT SALARIES (9 records)
 -- ============================================================================
 INSERT INTO salaries (employee_id, base_salary, allowances, deductions, effective_date, created_at, updated_at)
 VALUES
@@ -142,7 +183,7 @@ VALUES
 (3, 18000000, 2000000, 0, '2025-11-01', NOW(), NOW());
 
 -- ============================================================================
--- STEP 8: INSERT ATTENDANCE (24 records)
+-- STEP 9: INSERT ATTENDANCE (24 records)
 -- ============================================================================
 INSERT INTO attendance (employee_id, check_in_date, check_in_time, check_out_time, status, created_at)
 VALUES
@@ -177,7 +218,7 @@ VALUES
 (3, '2026-01-06', '2026-01-06 08:00:00', '2026-01-06 17:00:00', 'present', NOW());
 
 -- ============================================================================
--- STEP 9: INSERT KPIs (15 records)
+-- STEP 10: INSERT KPIs (15 records)
 -- ============================================================================
 INSERT INTO kpis (employee_id, metric, target, actual, period, created_at, updated_at)
 VALUES
@@ -203,7 +244,7 @@ VALUES
 (3, 'Audit preparation readiness', 90, 92, 'Q1 2026', NOW(), NOW());
 
 -- ============================================================================
--- STEP 10: INSERT WORK HISTORY (6 records)
+-- STEP 11: INSERT WORK HISTORY (6 records)
 -- ============================================================================
 INSERT INTO work_history (employee_id, previous_position, current_position, previous_department, current_department, transfer_date, reason, created_at)
 VALUES
@@ -215,7 +256,7 @@ VALUES
 (3, 'Finance Assistant', 'Junior Accountant', 'Finance', 'Finance', '2023-03-10', 'Initial hire', NOW());
 
 -- ============================================================================
--- STEP 11: VERIFY DATA INSERTION
+-- STEP 12: VERIFY DATA INSERTION
 -- ============================================================================
 -- Run these queries to verify all data was inserted correctly
 

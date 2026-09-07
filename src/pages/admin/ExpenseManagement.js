@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import Layout from '../../components/Layout';
-import { Search, ChevronLeft, ChevronRight, DollarSign, Check, X, Download, Plus } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 
 const ExpenseManagement = () => {
-  const [expenses, setExpenses] = useState([
+  const expenses = [
     { id: 1, category: 'Văn phòng phẩm', amount: 5000000, date: '05/01/2026', description: 'Mua máy in, giấy A4, bút viết', status: 'approved' },
     { id: 2, category: 'Điện nước', amount: 8000000, date: '01/01/2026', description: 'Hóa đơn tháng 12/2025', status: 'approved' },
     { id: 3, category: 'Marketing', amount: 15000000, date: '03/01/2026', description: 'Chi phí quảng cáo Facebook Ads', status: 'pending' },
@@ -19,7 +19,7 @@ const ExpenseManagement = () => {
     { id: 13, category: 'Đào tạo', amount: 15000000, date: '06/01/2026', description: 'Khóa học AWS Cloud Practitioner', status: 'pending' },
     { id: 14, category: 'Marketing', amount: 9000000, date: '04/01/2026', description: 'In tờ rơi, banner quảng cáo', status: 'approved' },
     { id: 15, category: 'Khác', amount: 5500000, date: '05/01/2026', description: 'Sửa chữa máy lạnh văn phòng', status: 'approved' },
-  ]);
+  ];
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
