@@ -18,16 +18,22 @@ const corsOrigins = (process.env.CORS_ORIGIN || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 const defaultCorsOrigins = [
-  'https://doantotnghiep253-wrzl-qrl15lzou-kietnguyen2286.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001'
 ];
 const allowedCorsOrigins = [...new Set([...corsOrigins, ...defaultCorsOrigins])];
+const vercelOriginPattern = /^https:\/\/doantotnghiep253-wrzl-[a-z0-9]+-kietnguyen2286\.vercel\.app$/;
 
 // Middleware
 // Configure CORS
 app.use(cors({
-  origin: allowedCorsOrigins,
+  origin: (origin, callback) => {
+    if (!origin || allowedCorsOrigins.includes(origin) || vercelOriginPattern.test(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Origin is not allowed by CORS'));
+  },
   credentials: true
 }));
 app.use(express.json());
