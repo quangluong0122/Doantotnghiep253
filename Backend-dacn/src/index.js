@@ -36,6 +36,14 @@ app.use('/api/salary', salaryRouter);
 app.use('/api/expenses', expenseRouter);
 app.use('/api/kpi', kpiRouter);
 
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'Employee Management API is running',
+    health: '/api/health'
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'API is running' });
