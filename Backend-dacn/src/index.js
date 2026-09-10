@@ -13,16 +13,21 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const corsOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const defaultCorsOrigins = [
+  'https://doantotnghiep253-wrzl-qrl15lzou-kietnguyen2286.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:3001'
+];
+const allowedCorsOrigins = [...new Set([...corsOrigins, ...defaultCorsOrigins])];
 
 // Middleware
 // Configure CORS
 app.use(cors({
-  origin: [
-    'https://ravishing-enjoyment-production.up.railway.app',  // Current production frontend
-    'https://testdacn.vercel.app',  // Old Vercel frontend
-    'http://localhost:3000',  // Development
-    'http://localhost:3001'   // Alternative dev port
-  ],
+  origin: allowedCorsOrigins,
   credentials: true
 }));
 app.use(express.json());
