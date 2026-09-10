@@ -18,6 +18,7 @@ const corsOrigins = (process.env.CORS_ORIGIN || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 const defaultCorsOrigins = [
+  'https://doantotnghiep253.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001'
 ];
