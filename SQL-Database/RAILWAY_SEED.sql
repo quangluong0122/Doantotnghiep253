@@ -1,17 +1,16 @@
 -- ============================================================================
--- EMPLOYEE MANAGEMENT SYSTEM - MYSQL WORKBENCH / RAILWAY DATABASE SETUP
--- Run employee_management_db.sql first when the database schema does not exist.
+-- EMPLOYEE MANAGEMENT SYSTEM - AIVEN MYSQL DATABASE SEED
+-- Run SQL-Database/employee_management_db.sql first when the schema does not exist.
 -- This script can then be run repeatedly to replace all seed data.
 -- ============================================================================
 
 -- ============================================================================
--- STEP 1: Select the database
+-- STEP 1: Select the Aiven database
 -- ============================================================================
-CREATE DATABASE IF NOT EXISTS employee_management_db;
-USE employee_management_db;
+USE defaultdb;
 
 -- Create this table when an older database was created without work history.
--- Run employee_management_db.sql first for a completely new database.
+-- Run SQL-Database/employee_management_db.sql first for a completely new database.
 CREATE TABLE IF NOT EXISTS work_history (
 	id INT PRIMARY KEY AUTO_INCREMENT,
 	employee_id INT NOT NULL,

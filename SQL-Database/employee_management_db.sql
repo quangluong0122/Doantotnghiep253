@@ -1,6 +1,5 @@
--- Create Database
-CREATE DATABASE IF NOT EXISTS employee_management_db;
-USE employee_management_db;
+-- Aiven MySQL database used by the Render backend
+USE defaultdb;
 
 -- Users Table
 CREATE TABLE IF NOT EXISTS users (
