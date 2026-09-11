@@ -155,8 +155,8 @@ const EmployeeDashboard = () => {
 
   const getFilteredSalaries = () => {
     return salaryData.filter(sal =>
-      sal.month.includes(salarySearch) ||
-      sal.status.toLowerCase().includes(salarySearch.toLowerCase())
+      String(sal.month || '').includes(salarySearch) ||
+      String(sal.status || '').toLowerCase().includes(salarySearch.toLowerCase())
     );
   };
 
