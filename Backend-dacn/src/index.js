@@ -14,9 +14,14 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const corsOrigins = (process.env.CORS_ORIGIN || '')
-  .split(',')
-  .map((origin) => origin.trim())
+const corsOrigins = [
+  process.env.CORS_ORIGIN,
+  process.env.CORS_ORIGINS,
+  process.env.FRONTEND_URL
+]
+  .filter(Boolean)
+  .flatMap((origins) => origins.split(','))
+  .map((origin) => origin.trim().replace(/\/$/, ''))
   .filter(Boolean);
 const defaultCorsOrigins = [
   'https://doantotnghiep253.vercel.app',
@@ -24,7 +29,7 @@ const defaultCorsOrigins = [
   'http://localhost:3001'
 ];
 const allowedCorsOrigins = [...new Set([...corsOrigins, ...defaultCorsOrigins])];
-const vercelOriginPattern = /^https:\/\/doantotnghiep253-wrzl-[a-z0-9]+-kietnguyen2286\.vercel\.app$/;
+const vercelOriginPattern = /^https:\/\/doantotnghiep253(?:-[a-z0-9-]+)?\.vercel\.app$/i;
 
 // Middleware
 // Configure CORS
@@ -34,7 +39,8 @@ app.use(cors({
       return callback(null, true);
     }
 
-    return callback(new Error('Origin is not allowed by CORS'));
+    console.warn(`Blocked CORS origin: ${origin}`);
+    return callback(null, false);
   },
   credentials: true
 }));
