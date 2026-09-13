@@ -8,6 +8,20 @@ if (typeof window !== 'undefined') {
 }
 
 const ApiService = {
+  sendChatbotMessage: async (message) => {
+    const response = await fetch(`${API_BASE_URL}/chatbot/message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...ApiService.getAuthHeader(),
+      },
+      body: JSON.stringify({ message }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Không thể kết nối chatbot');
+    return data;
+  },
+
   // Auth endpoints
   login: async (username, password) => {
     console.log('📤 Sending login request to:', `${API_BASE_URL}/auth/login`);

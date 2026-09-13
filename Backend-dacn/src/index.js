@@ -8,6 +8,7 @@ import attendanceRouter from './routes/attendance.js';
 import salaryRouter from './routes/salary.js';
 import expenseRouter from './routes/expenses.js';
 import kpiRouter from './routes/kpi.js';
+import chatbotRouter from './routes/chatbot.js';
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use('/api/attendance', attendanceRouter);
 app.use('/api/salary', salaryRouter);
 app.use('/api/expenses', expenseRouter);
 app.use('/api/kpi', kpiRouter);
+app.use('/api/chatbot', chatbotRouter);
 
 app.get('/', (req, res) => {
   res.json({

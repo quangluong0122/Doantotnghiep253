@@ -1,32 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../components/Layout';
-
-const initialFaq = [
-  {
-    q: 'Giờ làm việc là bao nhiêu?',
-    a: 'Giờ làm việc tiêu chuẩn là 8:30 - 17:30 từ thứ Hai đến thứ Sáu. Nghỉ trưa 1 giờ.'
-  },
-  {
-    q: 'Quy định về trang phục?',
-    a: 'Trang phục công sở: lịch sự, không mặc quần áo có nội dung phản cảm. Thứ Sáu mặc casual (không quá xuề xòa).'
-  },
-  {
-    q: 'Chế độ phúc lợi?',
-    a: 'Công ty cung cấp bảo hiểm y tế, bảo hiểm xã hội theo quy định, lương tháng 13 tuỳ hiệu suất, và 12 ngày phép năm.'
-  }
-];
-
-const mockLeaveBalances = {
-  annual: 12,
-  sick: 5,
-  unpaid: 0
-};
-
-const mockLeaveRequests = [
-  { id: 'LV-1001', type: 'annual', status: 'Đang chờ duyệt', reason: 'Du lịch', managerNote: '' },
-  { id: 'LV-1002', type: 'sick', status: 'Đã phê duyệt', reason: 'Ốm', managerNote: 'Chúc bạn mau khỏe' },
-  { id: 'LV-1003', type: 'annual', status: 'Đã từ chối', reason: 'Cần hoàn thiện tài liệu', managerNote: 'Thiếu thông tin chi tiết' }
-];
+import ApiService from '../services/ApiService';
 
 const ChatbotSupport = () => {
   const [messages, setMessages] = useState([
@@ -48,54 +22,20 @@ const ChatbotSupport = () => {
     setMessages((m) => [...m, { ...msg, time: new Date() }]);
   };
 
-  const botReply = (text) => {
-    // Very simple intent matching
-    const lower = text.toLowerCase();
-
-    // Check for leave balance request
-    if (lower.includes('số ngày') || lower.includes('còn lại') || lower.includes('ngày phép')) {
-      return `Bạn còn ${mockLeaveBalances.annual} ngày phép năm, ${mockLeaveBalances.sick} ngày phép ốm, và ${mockLeaveBalances.unpaid} ngày phép không lương.`;
-    }
-
-    // Check for leave request status
-    const idMatch = text.match(/lv-?\s*(\d+)/i);
-    if (idMatch) {
-      const id = `LV-${idMatch[1]}`;
-      const req = mockLeaveRequests.find(r => r.id.toLowerCase() === id.toLowerCase());
-      if (req) {
-        return `Đơn ${req.id}: Trạng thái "${req.status}". Lý do: ${req.reason}. Ghi chú quản lý: ${req.managerNote || 'Không có'}.`;
-      }
-      return `Không tìm thấy đơn với mã ${id}. Vui lòng kiểm tra mã và thử lại.`;
-    }
-
-    // Leave process
-    if (lower.includes('quy trình nghỉ') || lower.includes('nộp đơn nghỉ')) {
-      return 'Quy trình nghỉ phép: 1) Vào trang Nghỉ Phép > Tạo đơn mới; 2) Chọn loại phép và thời gian; 3) Ghi lý do và đính kèm (nếu có); 4) Gửi và chờ quản lý phê duyệt.';
-    }
-
-    // Policies / FAQ
-    if (lower.includes('chính sách') || lower.includes('quy định') || lower.includes('phúc lợi') || lower.includes('giờ làm')) {
-      const faqs = initialFaq.map(f => `Q: ${f.q}\nA: ${f.a}`).join('\n\n');
-      return `Dưới đây là một số thông tin thường gặp:\n\n${faqs}`;
-    }
-
-    // Fallback
-    return 'Xin lỗi, tôi chưa hiểu. Bạn có thể hỏi về: "chính sách", "quy trình nghỉ phép", "số ngày phép còn lại", hoặc "trạng thái đơn <MÃ ĐƠN>".';
-  };
-
-  const handleSend = () => {
-    const text = input.trim();
+  const handleSend = async (presetText = input) => {
+    const text = presetText.trim();
     if (!text) return;
     pushMessage({ from: 'user', text });
     setInput('');
     setLoadingReply(true);
-
-    // simulate async reply
-    setTimeout(() => {
-      const reply = botReply(text);
-      pushMessage({ from: 'bot', text: reply });
+    try {
+      const result = await ApiService.sendChatbotMessage(text);
+      pushMessage({ from: 'bot', text: result.reply });
+    } catch (error) {
+      pushMessage({ from: 'bot', text: error.message || 'Không thể kết nối chatbot lúc này.' });
+    } finally {
       setLoadingReply(false);
-    }, 600);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -113,17 +53,7 @@ const ChatbotSupport = () => {
   }, [messages]);
 
   const handleSampleClick = (q) => {
-    setInput(q);
-    // small delay then send
-    setTimeout(() => {
-      pushMessage({ from: 'user', text: q });
-      setLoadingReply(true);
-      const reply = botReply(q);
-      setTimeout(() => {
-        pushMessage({ from: 'bot', text: reply });
-        setLoadingReply(false);
-      }, 600);
-    }, 150);
+    handleSend(q);
   };
 
   return (
@@ -182,7 +112,7 @@ const ChatbotSupport = () => {
           </div>
         </div>
 
-        <div className="text-xs text-gray-500 mt-2">Lưu ý: Đây là chatbot phiên bản demo — thông tin ngày phép và đơn là dữ liệu mô phỏng. Để thao tác thực tế (tạo đơn, thay đổi), sử dụng chức năng Nghỉ Phép trong ứng dụng.</div>
+        <div className="text-xs text-gray-500 mt-2">Chatbot sử dụng chính sách nội bộ và dữ liệu cá nhân của tài khoản đang đăng nhập. Để tạo hoặc thay đổi đơn, sử dụng chức năng Nghỉ phép.</div>
       </div>
     </Layout>
   );
