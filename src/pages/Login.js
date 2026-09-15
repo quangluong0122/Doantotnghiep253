@@ -109,18 +109,13 @@ const Login = () => {
           return;
         }
 
-        setSuccess(`Đăng ký thành công! Vui lòng kiểm tra email ${email} để xác nhận tài khoản.`);
+        setSuccess(`Đăng ký thành công! Tài khoản ${username} đã được tạo. Hãy chuyển sang Đăng nhập để sử dụng hệ thống.`);
         
-        // Reset form
-        setTimeout(() => {
-          setFullName('');
-          setEmail('');
-          setUsername('');
-          setPassword('');
-          setConfirmPassword('');
-          setMode('login');
-          setSuccess('');
-        }, 3000);
+        // Keep the registration result visible until the user chooses the next step.
+        setFullName('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
       } catch (err) {
         setError('Lỗi đăng ký: ' + (err.message || 'Không xác định'));
       }

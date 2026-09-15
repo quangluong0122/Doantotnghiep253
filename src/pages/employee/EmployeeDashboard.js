@@ -9,6 +9,9 @@ const EmployeeDashboard = () => {
   const [leaves, setLeaves] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [salaries, setSalaries] = useState([]);
+  const [salarySearch, setSalarySearch] = useState('');
+  const [salaryPage, setSalaryPage] = useState(1);
+  const itemsPerPage = 8;
 
   // Fetch employee profile and data
   useEffect(() => {
@@ -32,7 +35,12 @@ const EmployeeDashboard = () => {
         if (leavesRes.ok) {
           const allLeaves = await leavesRes.json();
           // Note: This would need to be filtered by employee_id in backend
-          setLeaves(allLeaves.slice(0, 12));
+          setLeaves(allLeaves.slice(0, 12).map((leave) => ({
+            ...leave,
+            type: leave.leave_type,
+            date: `${new Date(leave.start_date).toLocaleDateString('vi-VN')} - ${new Date(leave.end_date).toLocaleDateString('vi-VN')}`,
+            days: Math.floor((new Date(leave.end_date) - new Date(leave.start_date)) / 86400000) + 1
+          })));
         }
 
         // Fetch expenses - filter by current employee
@@ -65,7 +73,8 @@ const EmployeeDashboard = () => {
   const stats = [
     { 
       title: 'Nghỉ Phép Còn Lại', 
-      value: '14', 
+      value: Math.max(12 - leaves.filter((leave) => leave.status === 'approved' && leave.leave_type === 'annual')
+        .reduce((days, leave) => days + (leave.days || 0), 0), 0).toString(),
       icon: Calendar, 
       color: 'bg-blue-500',
       unit: 'ngày'
@@ -93,35 +102,9 @@ const EmployeeDashboard = () => {
     },
   ];
 
-  // Use fetched data or defaults
-  const leavesData = leaves.length > 0 ? leaves : [
-    { id: 1, type: 'Nghỉ phép', date: '15/12/2025 - 20/12/2025', days: 6, status: 'approved' },
-    { id: 2, type: 'Nghỉ ốm', date: '05/11/2025 - 06/11/2025', days: 2, status: 'approved' },
-    { id: 3, type: 'Nghỉ phép', date: '10/01/2026 - 12/01/2026', days: 3, status: 'pending' },
-    { id: 4, type: 'Nghỉ phép', date: '20/01/2026 - 25/01/2026', days: 6, status: 'pending' },
-    { id: 5, type: 'Nghỉ việc riêng', date: '20/10/2025', days: 1, status: 'approved' },
-    { id: 6, type: 'Nghỉ phép', date: '05/02/2026 - 08/02/2026', days: 4, status: 'approved' },
-    { id: 7, type: 'Nghỉ ốm', date: '15/02/2026 - 16/02/2026', days: 2, status: 'pending' },
-    { id: 8, type: 'Nghỉ phép', date: '25/02/2026 - 28/02/2026', days: 4, status: 'approved' },
-  ];
-
-  const expensesData = expenses.length > 0 ? expenses : [
-    { id: 1, category: 'Văn phòng phẩm', amount: 5000000, date: '05/01/2026', description: 'Mua máy in, giấy A4, bút viết', status: 'approved' },
-    { id: 2, category: 'Điện nước', amount: 8000000, date: '01/01/2026', description: 'Hóa đơn tháng 12/2025', status: 'approved' },
-    { id: 3, category: 'Marketing', amount: 15000000, date: '03/01/2026', description: 'Chi phí quảng cáo Facebook Ads', status: 'pending' },
-    { id: 4, category: 'Đào tạo', amount: 12000000, date: '02/01/2026', description: 'Khóa học React Advanced', status: 'approved' },
-    { id: 5, category: 'Văn phòng phẩm', amount: 3500000, date: '04/01/2026', description: 'Mua bàn ghế văn phòng', status: 'approved' },
-    { id: 6, category: 'Marketing', amount: 20000000, date: '06/01/2026', description: 'Quảng cáo Google Ads', status: 'pending' },
-    { id: 7, category: 'Du lịch công tác', amount: 25000000, date: '08/01/2026', description: 'Tham dự hội thảo HN', status: 'approved' },
-    { id: 8, category: 'Bảo hiểm', amount: 18000000, date: '10/01/2026', description: 'Bảo hiểm sức khỏe nhân viên', status: 'approved' },
-  ];
-
-  const salaryData = salaries.length > 0 ? salaries : [
-    { id: 1, month: '01/2026', baseSalary: 25000000, bonus: 5000000, deduction: 0, total: 30000000, status: 'paid' },
-    { id: 2, month: '12/2025', baseSalary: 25000000, bonus: 3000000, deduction: 0, total: 28000000, status: 'paid' },
-    { id: 3, month: '11/2025', baseSalary: 25000000, bonus: 4000000, deduction: 500000, total: 28500000, status: 'paid' },
-    { id: 4, month: '10/2025', baseSalary: 25000000, bonus: 2500000, deduction: 0, total: 27500000, status: 'paid' },
-  ];
+  const leavesData = leaves;
+  const expensesData = expenses;
+  const salaryData = salaries;
 
   // State for leaves table
   const [leavesSearch, setLeavesSearch] = useState('');
@@ -130,13 +113,6 @@ const EmployeeDashboard = () => {
   // State for expenses table
   const [expensesSearch, setExpensesSearch] = useState('');
   const [expensesPage, setExpensesPage] = useState(1);
-  
-  // State for salary table
-  const [salarySearch, setSalarySearch] = useState('');
-  const [salaryPage, setSalaryPage] = useState(1);
-
-  const itemsPerPage = 8;
-
   // Filter functions
   const getFilteredLeaves = () => {
     return leavesData.filter(leave =>

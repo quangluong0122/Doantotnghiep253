@@ -1,22 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import ApiService from '../../services/ApiService';
 
 const AttendanceHistory = () => {
-  const [attendance] = useState([
-    { id: 1, date: '2025-12-20', checkIn: '08:30', checkOut: '17:45', status: 'on-time', duration: '9h 15m' },
-    { id: 2, date: '2025-12-19', checkIn: '08:15', checkOut: '17:30', status: 'on-time', duration: '9h 15m' },
-    { id: 3, date: '2025-12-18', checkIn: '08:45', checkOut: '18:00', status: 'late', duration: '9h 15m' },
-    { id: 4, date: '2025-12-17', checkIn: '08:00', checkOut: '17:15', status: 'on-time', duration: '9h 15m' },
-    { id: 5, date: '2025-12-16', checkIn: '08:30', checkOut: '17:45', status: 'on-time', duration: '9h 15m' },
-    { id: 6, date: '2025-12-15', checkIn: 'N/A', checkOut: 'N/A', status: 'absent', duration: '-' },
-    { id: 7, date: '2025-12-14', checkIn: '08:20', checkOut: '17:40', status: 'on-time', duration: '9h 20m' },
-    { id: 8, date: '2025-12-13', checkIn: '08:10', checkOut: '17:25', status: 'on-time', duration: '9h 15m' },
-    { id: 9, date: '2025-12-12', checkIn: '09:00', checkOut: '18:00', status: 'late', duration: '9h' },
-    { id: 10, date: '2025-12-11', checkIn: '08:30', checkOut: '17:45', status: 'on-time', duration: '9h 15m' },
-    { id: 11, date: '2025-12-10', checkIn: '08:00', checkOut: '17:15', status: 'on-time', duration: '9h 15m' },
-    { id: 12, date: '2025-12-09', checkIn: '08:35', checkOut: '17:50', status: 'on-time', duration: '9h 15m' },
-  ]);
+  const [attendance, setAttendance] = useState([]);
+
+  useEffect(() => {
+    ApiService.getAttendance().then((rows) => setAttendance(rows.map((row) => ({
+      ...row,
+      date: row.check_in_date,
+      checkIn: row.check_in_time ? new Date(row.check_in_time).toLocaleTimeString('vi-VN') : 'N/A',
+      checkOut: row.check_out_time ? new Date(row.check_out_time).toLocaleTimeString('vi-VN') : 'N/A',
+      status: row.status === 'present' ? 'on-time' : row.status,
+      duration: '-'
+    })))).catch(() => setAttendance([]));
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);

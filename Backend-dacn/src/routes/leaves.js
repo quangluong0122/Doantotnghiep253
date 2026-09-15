@@ -9,8 +9,10 @@ router.get('/', verifyToken, async (req, res) => {
   try {
     const connection = await pool.getConnection();
     const query = req.user.role === 'admin'
-      ? 'SELECT * FROM leaves'
-      : 'SELECT * FROM leaves WHERE employee_id = ?';
+      ? 'SELECT * FROM leaves ORDER BY created_at DESC, id DESC'
+      : `SELECT l.* FROM leaves l
+         INNER JOIN employees e ON e.id = l.employee_id
+         WHERE e.user_id = ? ORDER BY l.created_at DESC, l.id DESC`;
     
     const params = req.user.role === 'admin' ? [] : [req.user.id];
     const [rows] = await connection.execute(query, params);
@@ -24,13 +26,21 @@ router.get('/', verifyToken, async (req, res) => {
 
 // Create leave request
 router.post('/', verifyToken, async (req, res) => {
-  const { employee_id, leave_type, start_date, end_date, reason } = req.body;
+  const { leave_type, start_date, end_date, reason } = req.body;
 
   try {
     const connection = await pool.getConnection();
+    const [employees] = await connection.execute(
+      'SELECT id FROM employees WHERE user_id = ?',
+      [req.user.id]
+    );
+    if (!employees.length) {
+      connection.release();
+      return res.status(404).json({ message: 'Chưa có hồ sơ nhân viên' });
+    }
     const [result] = await connection.execute(
       'INSERT INTO leaves (employee_id, leave_type, start_date, end_date, reason, status) VALUES (?, ?, ?, ?, ?, ?)',
-      [employee_id, leave_type, start_date, end_date, reason, 'pending']
+      [employees[0].id, leave_type, start_date, end_date, reason, 'pending']
     );
     connection.release();
 

@@ -1,22 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { Search, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
+import ApiService from '../../services/ApiService';
 
 const EmployeeKPI = () => {
-  const [kpis] = useState([
-    { id: 1, metric: 'Doanh số bán hàng', target: '50,000,000 VNĐ', actual: '52,500,000 VNĐ', percentage: 105, period: 'Q4 2025' },
-    { id: 2, metric: 'Tỷ lệ khách hài lòng', target: '95%', actual: '97%', percentage: 102, period: 'Q4 2025' },
-    { id: 3, metric: 'Hoàn thành dự án', target: '100%', actual: '100%', percentage: 100, period: 'Q4 2025' },
-    { id: 4, metric: 'Năng suất làm việc', target: '90%', actual: '88%', percentage: 98, period: 'Q4 2025' },
-    { id: 5, metric: 'Đạt tiêu chuẩn chất lượng', target: '100%', actual: '96%', percentage: 96, period: 'Q3 2025' },
-    { id: 6, metric: 'Giao tiếp nhóm', target: '90%', actual: '92%', percentage: 102, period: 'Q3 2025' },
-    { id: 7, metric: 'Thời gian phản hồi', target: '24h', actual: '20h', percentage: 119, period: 'Q3 2025' },
-    { id: 8, metric: 'Tỷ lệ chỉ báo hiệu suất', target: '85%', actual: '87%', percentage: 102, period: 'Q2 2025' },
-    { id: 9, metric: 'Đạt thành tích mục tiêu', target: '80%', actual: '85%', percentage: 106, period: 'Q2 2025' },
-    { id: 10, metric: 'Sáng tạo và cải tiến', target: '75%', actual: '80%', percentage: 107, period: 'Q2 2025' },
-    { id: 11, metric: 'Kỹ năng lãnh đạo', target: '85%', actual: '83%', percentage: 98, period: 'Q1 2025' },
-    { id: 12, metric: 'Phối hợp đội nhóm', target: '90%', actual: '91%', percentage: 101, period: 'Q1 2025' },
-  ]);
+  const [kpis, setKpis] = useState([]);
+
+  useEffect(() => {
+    ApiService.getKPIs().then((rows) => setKpis(rows.map((row) => ({
+      ...row,
+      percentage: Number(row.target) ? Math.round((Number(row.actual || 0) / Number(row.target)) * 100) : 0
+    })))).catch(() => setKpis([]));
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,7 +33,9 @@ const EmployeeKPI = () => {
     return 'text-red-700 bg-red-100';
   };
 
-  const overallPercentage = Math.round(kpis.reduce((acc, kpi) => acc + kpi.percentage, 0) / kpis.length);
+  const overallPercentage = kpis.length
+    ? Math.round(kpis.reduce((acc, kpi) => acc + kpi.percentage, 0) / kpis.length)
+    : 0;
 
   return (
     <Layout>

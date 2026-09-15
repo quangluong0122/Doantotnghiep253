@@ -68,60 +68,56 @@ router.post('/register', async (req, res) => {
 
   try {
     const connection = await pool.getConnection();
-    
-    // Check if username already exists
-    const [existingUsername] = await connection.execute(
-      'SELECT id FROM users WHERE username = ?',
-      [username]
-    );
-    
-    if (existingUsername.length > 0) {
+    try {
+      const [existingUsername] = await connection.execute(
+        'SELECT id FROM users WHERE username = ?',
+        [username.trim()]
+      );
+      if (existingUsername.length > 0) {
+        return res.status(409).json({ message: 'Tên đăng nhập đã tồn tại. Vui lòng chọn tên khác.' });
+      }
+
+      const [existingEmail] = await connection.execute(
+        'SELECT id FROM users WHERE email = ?',
+        [email.trim().toLowerCase()]
+      );
+      if (existingEmail.length > 0) {
+        return res.status(409).json({ message: 'Email đã được đăng ký. Vui lòng sử dụng email khác.' });
+      }
+
+      await connection.beginTransaction();
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const [userResult] = await connection.execute(
+        'INSERT INTO users (username, password_hash, name, email, role) VALUES (?, ?, ?, ?, ?)',
+        [username.trim(), hashedPassword, fullName.trim(), email.trim().toLowerCase(), role || 'employee']
+      );
+
+      const nameParts = fullName.trim().split(/\s+/);
+      const firstName = nameParts.shift();
+      const lastName = nameParts.join(' ') || '';
+      const employeeId = `EMP${userResult.insertId}`;
+      await connection.execute(
+        `INSERT INTO employees (user_id, employee_id, first_name, last_name, email, status)
+         VALUES (?, ?, ?, ?, ?, 'active')`,
+        [userResult.insertId, employeeId, firstName, lastName, email.trim().toLowerCase()]
+      );
+      await connection.commit();
+    } catch (registrationError) {
+      await connection.rollback();
+      throw registrationError;
+    } finally {
       connection.release();
-      return res.status(400).json({ message: 'Tên đăng nhập đã tồn tại' });
-    }
-    
-    // Check if email already exists
-    const [existingEmail] = await connection.execute(
-      'SELECT id FROM users WHERE email = ?',
-      [email]
-    );
-    
-    if (existingEmail.length > 0) {
-      connection.release();
-      return res.status(400).json({ message: 'Email đã được đăng ký' });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Insert user
-    const [userResult] = await connection.execute(
-      'INSERT INTO users (username, password_hash, name, email, role) VALUES (?, ?, ?, ?, ?)',
-      [username, hashedPassword, fullName, email, role || 'employee']
-    );
-
-    const userId = userResult.insertId;
-    const nameParts = fullName.trim().split(' ');
-    const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ') || '';
-    
-    // Generate employee ID
-    const employeeId = `EMP${Date.now()}`;
-
-    // Create employee record
-    await connection.execute(
-      `INSERT INTO employees (user_id, employee_id, first_name, last_name, email, status) 
-       VALUES (?, ?, ?, ?, ?, 'active')`,
-      [userId, employeeId, firstName, lastName, email]
-    );
-
-    connection.release();
     res.status(201).json({ 
       success: true, 
-      message: 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.',
-      email: email,
-      userId: userId
+      message: 'Đăng ký thành công! Bạn có thể đăng nhập bằng tài khoản mới.',
+      email: email.trim().toLowerCase()
     });
   } catch (error) {
+    if (error.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'Tên đăng nhập hoặc email đã tồn tại.' });
+    }
     res.status(500).json({ message: 'Lỗi máy chủ: ' + error.message });
   }
 });

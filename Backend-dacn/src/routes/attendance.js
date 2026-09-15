@@ -10,7 +10,9 @@ router.get('/', verifyToken, async (req, res) => {
     const connection = await pool.getConnection();
     const query = req.user.role === 'admin'
       ? 'SELECT * FROM attendance'
-      : 'SELECT * FROM attendance WHERE employee_id = ?';
+      : `SELECT a.* FROM attendance a
+         INNER JOIN employees e ON e.id = a.employee_id
+         WHERE e.user_id = ? ORDER BY a.check_in_date DESC, a.id DESC`;
     
     const params = req.user.role === 'admin' ? [] : [req.user.id];
     const [rows] = await connection.execute(query, params);
@@ -26,9 +28,14 @@ router.get('/', verifyToken, async (req, res) => {
 router.post('/checkin', verifyToken, async (req, res) => {
   try {
     const connection = await pool.getConnection();
+    const [employees] = await connection.execute('SELECT id FROM employees WHERE user_id = ?', [req.user.id]);
+    if (!employees.length) {
+      connection.release();
+      return res.status(404).json({ message: 'Chưa có hồ sơ nhân viên' });
+    }
     const [result] = await connection.execute(
       'INSERT INTO attendance (employee_id, check_in_time, check_in_date) VALUES (?, NOW(), CURDATE())',
-      [req.user.id]
+      [employees[0].id]
     );
     connection.release();
 
@@ -42,9 +49,14 @@ router.post('/checkin', verifyToken, async (req, res) => {
 router.post('/checkout', verifyToken, async (req, res) => {
   try {
     const connection = await pool.getConnection();
+    const [employees] = await connection.execute('SELECT id FROM employees WHERE user_id = ?', [req.user.id]);
+    if (!employees.length) {
+      connection.release();
+      return res.status(404).json({ message: 'Chưa có hồ sơ nhân viên' });
+    }
     await connection.execute(
       'UPDATE attendance SET check_out_time = NOW() WHERE employee_id = ? AND check_out_time IS NULL AND CURDATE() = DATE(check_in_date)',
-      [req.user.id]
+      [employees[0].id]
     );
     connection.release();
 
