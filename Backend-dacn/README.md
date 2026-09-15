@@ -62,4 +62,4 @@ The API will run on `http://localhost:5000`
 
 ## Deployment
 
-Deploy to Heroku or Railways platform.
+Deploy the backend to the configured hosting platform.

@@ -23,7 +23,7 @@ Frontend-dacn/
 ```
 ✅ **Status:** Ready to deploy
 
-### 2️⃣  BACKEND (Express) - Deploy to Heroku/Railway
+### 2️⃣  BACKEND (Express) - Deploy to a hosting platform
 ```
 Backend-dacn/
 ├── 🆕 src/index.js                  ← Express server
@@ -37,7 +37,6 @@ Backend-dacn/
 ├── 🆕 src/routes/kpi.js              ← KPI tracking
 ├── 🆕 config/database.js             ← MySQL connection
 ├── 🆕 Procfile                       ← Heroku config
-├── 🆕 railway.example.json           ← Railway config
 ├── 🆕 package.json                   ← Dependencies
 └── 🆕 .env.example                   ← Config template
 ```
@@ -73,7 +72,6 @@ SQL-Database/
 ```
 🆕 .github/workflows/deploy-frontend.yml       → Auto-deploy to Vercel
 🆕 .github/workflows/deploy-backend-heroku.yml → Auto-deploy to Heroku
-🆕 .github/workflows/deploy-backend-railway.yml → Auto-deploy to Railway
 ```
 ✅ **Status:** Ready to configure
 
@@ -102,7 +100,7 @@ TOTAL:                    37+ files
 ✅ Frontend UI        React components + API integration
 ✅ Authentication     JWT + Role-based access
 ✅ Documentation      11 comprehensive guides
-✅ Deployment Config  Vercel, Heroku, Railway ready
+✅ Deployment Config  Vercel and backend hosting ready
 ✅ CI/CD Pipelines    GitHub Actions automated
 ✅ Security          Password hashing, CORS, validation
 ✅ Setup Scripts      Automated database initialization
@@ -125,7 +123,7 @@ TOTAL:                    37+ files
 ┌─────────────────────────────────────────────────────────────┐
 │  PHASE 2: CLOUD (1-2 hours)                                │
 │  ✅ Deploy database to AWS/Azure/DigitalOcean             │
-│  ✅ Deploy backend to Heroku/Railway                       │
+│  ✅ Deploy backend to the configured hosting platform      │
 │  ✅ Deploy frontend to Vercel                              │
 │  ✅ Connect & test production                             │
 │  Result: Application live on internet                      │
@@ -318,11 +316,10 @@ d:\Frontend-dacn\
 │   ├── 🆕 vercel.json
 │   └── ... (other React files)
 │
-├── 📁 Backend-dacn/ ........................ Express API (Heroku/Railway)
+├── 📁 Backend-dacn/ ........................ Express API
 │   ├── 🆕 src/index.js
 │   ├── 🆕 src/routes/ (7 files)
 │   ├── 🆕 Procfile
-│   ├── 🆕 railway.example.json
 │   └── ... (other backend files)
 │
 ├── 📁 SQL-Database/ ........................ MySQL (Cloud hosting)
@@ -334,7 +331,6 @@ d:\Frontend-dacn\
 └── 📁 .github/workflows/ .................. CI/CD automation
     ├── 🆕 deploy-frontend.yml
     ├── 🆕 deploy-backend-heroku.yml
-    └── 🆕 deploy-backend-railway.yml
 ```
 
 ---
