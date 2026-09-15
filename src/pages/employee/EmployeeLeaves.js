@@ -1,22 +1,20 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import ApiService from '../../services/ApiService';
 
 const EmployeeLeaves = () => {
-  const [leaves] = useState([
-    { id: 1, type: 'Nghỉ phép', startDate: '2025-12-15', endDate: '2025-12-20', days: 6, reason: 'Du lịch gia đình', status: 'approved' },
-    { id: 2, type: 'Nghỉ ốm', startDate: '2025-11-05', endDate: '2025-11-06', days: 2, reason: 'Bị cảm', status: 'approved' },
-    { id: 3, type: 'Nghỉ phép', startDate: '2026-01-10', endDate: '2026-01-12', days: 3, reason: 'Việc cá nhân', status: 'pending' },
-    { id: 4, type: 'Nghỉ việc riêng', startDate: '2025-10-20', endDate: '2025-10-20', days: 1, reason: 'Đi khám bệnh định kỳ', status: 'approved' },
-    { id: 5, type: 'Nghỉ phép', startDate: '2025-09-10', endDate: '2025-09-15', days: 6, reason: 'Nghỉ hè cùng gia đình', status: 'approved' },
-    { id: 6, type: 'Nghỉ ốm', startDate: '2025-08-05', endDate: '2025-08-07', days: 3, reason: 'Sốt cao, đau đầu', status: 'approved' },
-    { id: 7, type: 'Nghỉ phép', startDate: '2026-01-20', endDate: '2026-01-25', days: 6, reason: 'Về quê nghỉ Tết', status: 'pending' },
-    { id: 8, type: 'Nghỉ việc riêng', startDate: '2025-07-15', endDate: '2025-07-15', days: 1, reason: 'Làm thủ tục hành chính', status: 'approved' },
-    { id: 9, type: 'Nghỉ phép', startDate: '2025-06-01', endDate: '2025-06-05', days: 5, reason: 'Tham dự đám cưới bạn bè', status: 'approved' },
-    { id: 10, type: 'Nghỉ ốm', startDate: '2025-05-10', endDate: '2025-05-11', days: 2, reason: 'Đau dạ dày', status: 'approved' },
-    { id: 11, type: 'Nghỉ phép', startDate: '2025-04-20', endDate: '2025-04-22', days: 3, reason: 'Lễ 30/4', status: 'approved' },
-    { id: 12, type: 'Nghỉ việc riêng', startDate: '2025-03-15', endDate: '2025-03-15', days: 1, reason: 'Dự lễ gia đình', status: 'approved' },
-  ]);
+  const [leaves, setLeaves] = useState([]);
+
+  useEffect(() => {
+    ApiService.getLeaves().then((rows) => setLeaves(rows.map((leave) => ({
+      ...leave,
+      type: leave.leave_type,
+      startDate: leave.start_date,
+      endDate: leave.end_date,
+      days: Math.floor((new Date(leave.end_date) - new Date(leave.start_date)) / 86400000) + 1
+    })))).catch(() => setLeaves([]));
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -88,6 +86,7 @@ const EmployeeLeaves = () => {
           <div className="overflow-y-auto max-h-96">
             <table className="min-w-full">
               <tbody className="divide-y divide-gray-200">
+                {paginatedLeaves.length === 0 && <tr><td colSpan="6" className="py-8 text-center text-gray-500">Bạn chưa có đơn nghỉ phép nào.</td></tr>}
                 {paginatedLeaves.map((leave) => (
                   <tr key={leave.id} className="hover:bg-gray-50">
                     <td className="py-4 px-6 font-medium">{leave.type}</td>
