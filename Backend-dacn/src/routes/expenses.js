@@ -8,9 +8,13 @@ const router = express.Router();
 router.get('/', verifyToken, async (req, res) => {
   try {
     const connection = await pool.getConnection();
-    const query = req.user.role === 'admin'
-      ? 'SELECT * FROM expenses'
-      : 'SELECT * FROM expenses WHERE employee_id = ?';
+     const query = req.user.role === 'admin'
+      ? `SELECT e.*, CONCAT(emp.first_name, ' ', emp.last_name) AS employee_name
+        FROM expenses e LEFT JOIN employees emp ON emp.id = e.employee_id
+        ORDER BY e.date DESC, e.id DESC`
+      : `SELECT e.* FROM expenses e
+        INNER JOIN employees emp ON emp.id = e.employee_id
+        WHERE emp.user_id = ? ORDER BY e.date DESC, e.id DESC`;
     
     const params = req.user.role === 'admin' ? [] : [req.user.id];
     const [rows] = await connection.execute(query, params);
@@ -43,6 +47,10 @@ router.post('/', verifyToken, async (req, res) => {
 // Approve expense (admin only)
 router.put('/:id', verifyToken, verifyRole(['admin']), async (req, res) => {
   const { status } = req.body;
+
+  if (!['pending', 'approved', 'rejected', 'paid'].includes(status)) {
+    return res.status(400).json({ message: 'Trạng thái chi phí không hợp lệ' });
+  }
 
   try {
     const connection = await pool.getConnection();

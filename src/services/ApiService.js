@@ -211,6 +211,15 @@ const ApiService = {
     return response.json();
   },
 
+  getKpiDetails: async (employeeId) => {
+    const response = await fetch(`${API_BASE_URL}/kpi/employee/${employeeId}/details`, {
+      headers: ApiService.getAuthHeader(),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Không thể tải chi tiết KPI');
+    return data;
+  },
+
   // KPI
   getKPIs: async () => {
     const response = await fetch(`${API_BASE_URL}/kpi`, {

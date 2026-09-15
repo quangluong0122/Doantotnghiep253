@@ -1,29 +1,42 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { Search, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
+import ApiService from '../../services/ApiService';
 
 const ExpenseManagement = () => {
-  const expenses = [
-    { id: 1, category: 'Văn phòng phẩm', amount: 5000000, date: '05/01/2026', description: 'Mua máy in, giấy A4, bút viết', status: 'approved' },
-    { id: 2, category: 'Điện nước', amount: 8000000, date: '01/01/2026', description: 'Hóa đơn tháng 12/2025', status: 'approved' },
-    { id: 3, category: 'Marketing', amount: 15000000, date: '03/01/2026', description: 'Chi phí quảng cáo Facebook Ads', status: 'pending' },
-    { id: 4, category: 'Đào tạo', amount: 12000000, date: '02/01/2026', description: 'Khóa học React Advanced cho team Dev', status: 'approved' },
-    { id: 5, category: 'Văn phòng phẩm', amount: 3500000, date: '04/01/2026', description: 'Mua bàn ghế văn phòng mới', status: 'approved' },
-    { id: 6, category: 'Marketing', amount: 20000000, date: '06/01/2026', description: 'Chi phí quảng cáo Google Ads', status: 'pending' },
-    { id: 7, category: 'Khác', amount: 6000000, date: '01/01/2026', description: 'Thuê dịch vụ vệ sinh văn phòng', status: 'approved' },
-    { id: 8, category: 'Điện nước', amount: 7500000, date: '01/01/2026', description: 'Tiền internet và điện thoại', status: 'approved' },
-    { id: 9, category: 'Đào tạo', amount: 8000000, date: '03/01/2026', description: 'Workshop về UI/UX Design', status: 'approved' },
-    { id: 10, category: 'Marketing', amount: 18000000, date: '05/01/2026', description: 'Tổ chức sự kiện khách hàng', status: 'pending' },
-    { id: 11, category: 'Văn phòng phẩm', amount: 4200000, date: '04/01/2026', description: 'Mua laptop phụ kiện', status: 'approved' },
-    { id: 12, category: 'Khác', amount: 10000000, date: '02/01/2026', description: 'Bảo hiểm văn phòng', status: 'approved' },
-    { id: 13, category: 'Đào tạo', amount: 15000000, date: '06/01/2026', description: 'Khóa học AWS Cloud Practitioner', status: 'pending' },
-    { id: 14, category: 'Marketing', amount: 9000000, date: '04/01/2026', description: 'In tờ rơi, banner quảng cáo', status: 'approved' },
-    { id: 15, category: 'Khác', amount: 5500000, date: '05/01/2026', description: 'Sửa chữa máy lạnh văn phòng', status: 'approved' },
-  ];
-
+  const [expenses, setExpenses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+
+  const loadExpenses = async () => {
+    try {
+      setLoading(true);
+      setExpenses(await ApiService.getExpenses());
+      setError('');
+    } catch (loadError) {
+      setError(loadError.message || 'Không thể tải danh sách chi phí');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadExpenses();
+  }, []);
+
+  const handleExpenseStatus = async (id, status) => {
+    try {
+      await ApiService.updateExpense(id, status);
+      setExpenses((current) => current.map((expense) =>
+        expense.id === id ? { ...expense, status } : expense
+      ));
+    } catch (updateError) {
+      setError(updateError.message || 'Không thể cập nhật chi phí');
+    }
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', {
@@ -37,7 +50,7 @@ const ExpenseManagement = () => {
     exp.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
     exp.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     exp.status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exp.date.includes(searchTerm)
+    String(exp.date || '').includes(searchTerm)
   );
 
   const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
@@ -92,6 +105,7 @@ const ExpenseManagement = () => {
         </div>
 
         {/* Expenses Table */}
+        {error && <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-red-700">{error}</div>}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 section-enter" style={{animationDelay: '0.2s'}}>
           <div className="overflow-x-auto max-h-96 overflow-y-auto border border-gray-200 rounded-lg">
             <table className="min-w-full">
@@ -105,9 +119,11 @@ const ExpenseManagement = () => {
                 </tr>
               </thead>
               <tbody>
+                {loading && <tr><td colSpan="5" className="py-8 text-center text-gray-500">Đang tải dữ liệu...</td></tr>}
+                {!loading && paginatedExpenses.length === 0 && <tr><td colSpan="5" className="py-8 text-center text-gray-500">Chưa có dữ liệu chi phí</td></tr>}
                 {paginatedExpenses.map((expense, idx) => (
                   <tr key={expense.id} className="border-b hover:bg-gray-50 transition-all duration-200 table-row-enter" style={{animationDelay: `${idx * 40}ms`}}>
-                    <td className="py-4 px-4 text-gray-700">{expense.date}</td>
+                    <td className="py-4 px-4 text-gray-700">{new Date(expense.date).toLocaleDateString('vi-VN')}</td>
                     <td className="py-4 px-4 font-medium text-gray-800">{expense.category}</td>
                     <td className="py-4 px-4 text-blue-600 font-semibold">{formatCurrency(expense.amount)}</td>
                     <td className="py-4 px-4 text-gray-700 max-w-xs truncate">{expense.description}</td>
@@ -115,10 +131,16 @@ const ExpenseManagement = () => {
                       <span className={`px-3 py-1.5 rounded-full text-xs font-bold inline-block ${
                         expense.status === 'approved' 
                           ? 'bg-green-100 text-green-800 border border-green-200'
-                          : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                          : expense.status === 'rejected'
+                            ? 'bg-red-100 text-red-800 border border-red-200'
+                            : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
                       }`}>
-                        {expense.status === 'approved' ? '✓ Đã duyệt' : '⏳ Chờ duyệt'}
+                        {expense.status === 'approved' ? '✓ Đã duyệt' : expense.status === 'rejected' ? '✕ Từ chối' : '⏳ Chờ duyệt'}
                       </span>
+                      {expense.status === 'pending' && <div className="mt-2 flex gap-2">
+                        <button onClick={() => handleExpenseStatus(expense.id, 'approved')} className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700">Duyệt</button>
+                        <button onClick={() => handleExpenseStatus(expense.id, 'rejected')} className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700">Từ chối</button>
+                      </div>}
                     </td>
                   </tr>
                 ))}

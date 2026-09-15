@@ -9,13 +9,41 @@ router.get('/', verifyToken, async (req, res) => {
   try {
     const connection = await pool.getConnection();
     const query = req.user.role === 'admin'
-      ? 'SELECT * FROM kpis'
-      : 'SELECT * FROM kpis WHERE employee_id = ?';
+      ? `SELECT k.*, e.employee_id AS employee_code,
+                CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+                e.department
+         FROM kpis k LEFT JOIN employees e ON e.id = k.employee_id
+         ORDER BY k.period DESC, k.id DESC`
+      : `SELECT k.* FROM kpis k
+         INNER JOIN employees e ON e.id = k.employee_id
+         WHERE e.user_id = ? ORDER BY k.period DESC, k.id DESC`;
     
     const params = req.user.role === 'admin' ? [] : [req.user.id];
     const [rows] = await connection.execute(query, params);
     connection.release();
 
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// KPI history for one employee, restricted to administrators.
+router.get('/employee/:employeeId/details', verifyToken, verifyRole(['admin']), async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    const [rows] = await connection.execute(
+      `SELECT k.id, k.metric, k.target, k.actual, k.period,
+              e.employee_id AS employee_code,
+              CONCAT(e.first_name, ' ', e.last_name) AS employee_name,
+              e.department, e.position
+       FROM kpis k INNER JOIN employees e ON e.id = k.employee_id
+       WHERE k.employee_id = ?
+       ORDER BY k.period ASC, k.id ASC`,
+      [req.params.employeeId]
+    );
+    connection.release();
+    if (!rows.length) return res.status(404).json({ message: 'Chưa có dữ liệu KPI của nhân viên' });
     res.json(rows);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

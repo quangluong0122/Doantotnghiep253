@@ -1,26 +1,69 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { Search, ChevronLeft, ChevronRight, Plus, Eye } from 'lucide-react';
+import ApiService from '../../services/ApiService';
 
 const KPIManagement = () => {
-  const [kpis] = useState([
-    { id: 1, employeeId: 'EMP001', name: 'Nguyễn Văn A', department: 'IT', period: 'Q4 2025', metric: 'Doanh số', target: '50M', actual: '52.5M', percentage: 105 },
-    { id: 2, employeeId: 'EMP002', name: 'Trần Thị B', department: 'Design', period: 'Q4 2025', metric: 'Dự án hoàn thành', target: '5', actual: '6', percentage: 120 },
-    { id: 3, employeeId: 'EMP003', name: 'Lê Văn C', department: 'Management', period: 'Q4 2025', metric: 'Khách hài lòng', target: '95%', actual: '97%', percentage: 102 },
-    { id: 4, employeeId: 'EMP004', name: 'Phạm Thị D', department: 'IT', period: 'Q4 2025', metric: 'Chất lượng', target: '90%', actual: '88%', percentage: 98 },
-    { id: 5, employeeId: 'EMP005', name: 'Hoàng Văn E', department: 'IT', period: 'Q4 2025', metric: 'Năng suất', target: '90%', actual: '92%', percentage: 102 },
-    { id: 6, employeeId: 'EMP006', name: 'Vũ Thị F', department: 'IT', period: 'Q3 2025', metric: 'Deadline', target: '95%', actual: '96%', percentage: 101 },
-    { id: 7, employeeId: 'EMP007', name: 'Đỗ Văn G', department: 'IT', period: 'Q3 2025', metric: 'Cải tiến', target: '80%', actual: '85%', percentage: 106 },
-    { id: 8, employeeId: 'EMP008', name: 'Bùi Thị H', department: 'Design', period: 'Q3 2025', metric: 'Sáng tạo', target: '75%', actual: '80%', percentage: 107 },
-    { id: 9, employeeId: 'EMP009', name: 'Đinh Văn I', department: 'HR', period: 'Q2 2025', metric: 'Tuyển dụng', target: '20', actual: '22', percentage: 110 },
-    { id: 10, employeeId: 'EMP010', name: 'Mai Thị K', department: 'Marketing', period: 'Q2 2025', metric: 'Campaign', target: '5', actual: '5', percentage: 100 },
-    { id: 11, employeeId: 'EMP011', name: 'Lý Văn L', department: 'Sales', period: 'Q1 2025', metric: 'Doanh số', target: '100M', actual: '105M', percentage: 105 },
-    { id: 12, employeeId: 'EMP012', name: 'Trương Thị M', department: 'Finance', period: 'Q1 2025', metric: 'Báo cáo', target: '100%', actual: '100%', percentage: 100 },
-  ]);
+  const [kpis, setKpis] = useState([]);
+  const [selectedKpi, setSelectedKpi] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+
+  useEffect(() => {
+    const loadKpis = async () => {
+      try {
+        const rows = await ApiService.getKPIs();
+        setKpis(rows.map((row) => ({
+          ...row,
+          employeeId: row.employee_code,
+          name: row.employee_name,
+          department: row.department,
+          target: row.target,
+          actual: row.actual,
+          percentage: Number(row.target) ? (Number(row.actual || 0) / Number(row.target)) * 100 : 0
+        })));
+      } catch (loadError) {
+        setError(loadError.message || 'Không thể tải dữ liệu KPI');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadKpis();
+  }, []);
+
+  const openDetails = async (kpi) => {
+    try {
+      setSelectedKpi(kpi);
+      setDetailLoading(true);
+      setHistory(await ApiService.getKpiDetails(kpi.employee_id));
+      setError('');
+    } catch (detailError) {
+      setError(detailError.message || 'Không thể tải chi tiết KPI');
+      setSelectedKpi(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const getPrediction = () => {
+    const scores = history
+      .map((row) => Number(row.target) ? (Number(row.actual || 0) / Number(row.target)) * 100 : 0)
+      .filter((score) => Number.isFinite(score));
+    if (!scores.length) return null;
+    const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+    const recent = scores[scores.length - 1];
+    const previous = scores.length > 1 ? scores[scores.length - 2] : recent;
+    const trend = recent - previous;
+    const prediction = Math.max(0, Math.min(150, recent + trend * 0.5));
+    const outlook = prediction >= 100 ? 'có khả năng đạt hoặc vượt mục tiêu' : 'cần được hỗ trợ để đạt mục tiêu';
+    return { average, prediction, trend, outlook };
+  };
 
   const filteredKPIs = kpis.filter(kpi =>
     kpi.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,6 +138,8 @@ const KPIManagement = () => {
           <div className="overflow-y-auto max-h-96">
             <table className="min-w-full">
               <tbody className="divide-y divide-gray-200">
+                {loading && <tr><td colSpan="9" className="py-8 text-center text-gray-500">Đang tải dữ liệu KPI...</td></tr>}
+                {!loading && !paginatedKPIs.length && <tr><td colSpan="9" className="py-8 text-center text-gray-500">Chưa có dữ liệu KPI</td></tr>}
                 {paginatedKPIs.map((kpi) => (
                   <tr key={kpi.id} className="hover:bg-gray-50">
                     <td className="py-4 px-6 font-medium">{kpi.employeeId}</td>
@@ -110,7 +155,7 @@ const KPIManagement = () => {
                     <td className="py-4 px-6 font-medium">{kpi.actual}</td>
                     <td className="py-4 px-6">{getStatusBadge(kpi.percentage)}</td>
                     <td className="py-4 px-6">
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded">
+                        <button onClick={() => openDetails(kpi)} title="Xem chi tiết KPI" className="p-2 text-blue-600 hover:bg-blue-50 rounded">
                         <Eye className="w-5 h-5" />
                       </button>
                     </td>
@@ -120,6 +165,38 @@ const KPIManagement = () => {
             </table>
           </div>
         </div>
+
+        {error && <div className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-red-700">{error}</div>}
+
+        {selectedKpi && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
+            <div className="mb-5 flex items-start justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800">Chi tiết KPI: {selectedKpi.name}</h2>
+                <p className="text-gray-500">{selectedKpi.employeeId} · {selectedKpi.department || 'Chưa có phòng ban'}</p>
+              </div>
+              <button onClick={() => setSelectedKpi(null)} className="text-2xl text-gray-500 hover:text-gray-800" aria-label="Đóng">×</button>
+            </div>
+            {detailLoading ? <p className="py-8 text-center text-gray-500">Đang tải lịch sử KPI...</p> : <>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="border-b bg-gray-50"><tr><th className="p-3">Kỳ</th><th className="p-3">Chỉ tiêu</th><th className="p-3">Mục tiêu</th><th className="p-3">Thực tế</th><th className="p-3">Hoàn thành</th></tr></thead>
+                  <tbody>{history.map((row) => {
+                    const score = Number(row.target) ? (Number(row.actual || 0) / Number(row.target)) * 100 : 0;
+                    return <tr key={row.id} className="border-b"><td className="p-3">{row.period}</td><td className="p-3">{row.metric}</td><td className="p-3">{row.target}</td><td className="p-3">{row.actual}</td><td className="p-3 font-semibold">{score.toFixed(1)}%</td></tr>;
+                  })}</tbody>
+                </table>
+              </div>
+              {getPrediction() && <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <h3 className="font-bold text-blue-900">Dự đoán hiệu suất bằng AI nội bộ</h3>
+                <p className="mt-2 text-blue-900">Dựa trên xu hướng các kỳ đã ghi nhận, hiệu suất kỳ tiếp theo dự kiến khoảng <strong>{getPrediction().prediction.toFixed(1)}%</strong>, {getPrediction().outlook}.</p>
+                <p className="mt-1 text-sm text-blue-700">Điểm trung bình lịch sử: {getPrediction().average.toFixed(1)}% · Xu hướng gần nhất: {getPrediction().trend >= 0 ? '+' : ''}{getPrediction().trend.toFixed(1)} điểm.</p>
+                <p className="mt-2 text-xs text-blue-700">Đây là dự đoán tham khảo chạy cục bộ từ dữ liệu KPI, không thay thế đánh giá của quản lý.</p>
+              </div>}
+            </>}
+            <div className="mt-5 flex justify-end"><button onClick={() => setSelectedKpi(null)} className="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300">Đóng</button></div>
+          </div>
+        </div>}
 
         {/* Pagination */}
         <div className="flex items-center justify-between mt-6 p-4 bg-white rounded-lg shadow">
