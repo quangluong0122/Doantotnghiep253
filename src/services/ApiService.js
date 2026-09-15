@@ -18,7 +18,11 @@ const ApiService = {
       body: JSON.stringify({ message }),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || 'Không thể kết nối chatbot');
+    if (!response.ok) {
+      const error = new Error(data.message || 'Không thể kết nối chatbot');
+      error.status = response.status;
+      throw error;
+    }
     return data;
   },
 

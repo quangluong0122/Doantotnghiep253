@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Layout from '../components/Layout';
 import ApiService from '../services/ApiService';
+import { useAuth } from '../context/AuthContext';
 
 const ChatbotSupport = () => {
+  const { logout } = useAuth();
   const [messages, setMessages] = useState([
     { from: 'bot', text: 'Xin chào! Tôi là Chatbot Hỗ trợ. Bạn cần giúp gì về chính sách nhân sự hoặc nghỉ phép? (vd: "quy trình nghỉ phép", "số ngày phép còn lại", "trạng thái đơn LV-1001")', time: new Date() }
   ]);
@@ -11,11 +13,17 @@ const ChatbotSupport = () => {
   const chatRef = useRef(null);
 
   const sampleQuestions = [
+    'Thông tin cá nhân của tôi',
+    'Lương của tôi',
+    'Lịch sử chấm công của tôi',
+    'Các đơn nghỉ gần đây',
     'Quy trình nghỉ phép',
     'Số ngày phép còn lại',
     'Trạng thái đơn LV-1001',
     'Chế độ phúc lợi',
-    'Quy định về trang phục'
+    'Quy định về trang phục',
+    'Các loại phép hiện có',
+    'Quy định về KPI'
   ];
 
   const pushMessage = (msg) => {
@@ -32,7 +40,12 @@ const ChatbotSupport = () => {
       const result = await ApiService.sendChatbotMessage(text);
       pushMessage({ from: 'bot', text: result.reply });
     } catch (error) {
-      pushMessage({ from: 'bot', text: error.message || 'Không thể kết nối chatbot lúc này.' });
+      if (error.status === 401) {
+        logout();
+        pushMessage({ from: 'bot', text: 'Phiên đăng nhập đã hết hạn hoặc không hợp lệ. Vui lòng đăng nhập lại.' });
+      } else {
+        pushMessage({ from: 'bot', text: error.message || 'Không thể kết nối chatbot lúc này.' });
+      }
     } finally {
       setLoadingReply(false);
     }

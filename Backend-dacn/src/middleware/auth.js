@@ -1,18 +1,28 @@
 import jwt from 'jsonwebtoken';
 
 export const verifyToken = (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
+  const authorization = req.get('authorization') || '';
+  const [scheme, token] = authorization.trim().split(/\s+/);
 
-  if (!token) {
+  if (!token || scheme.toLowerCase() !== 'bearer') {
     return res.status(401).json({ message: 'No token provided' });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const secret = process.env.JWT_SECRET?.trim();
+    if (!secret) {
+      console.error('JWT_SECRET is not configured');
+      return res.status(500).json({ message: 'Authentication is not configured' });
+    }
+
+    const decoded = jwt.verify(token, secret);
     req.user = decoded;
     next();
   } catch (err) {
-    return res.status(401).json({ message: 'Invalid token' });
+    const message = err.name === 'TokenExpiredError'
+      ? 'Token expired'
+      : 'Invalid token';
+    return res.status(401).json({ message });
   }
 };
 
