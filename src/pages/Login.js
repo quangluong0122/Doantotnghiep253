@@ -109,6 +109,7 @@ const Login = () => {
           return;
         }
 
+        setError('');
         setSuccess(`Đăng ký thành công! Tài khoản ${username} đã được tạo. Hãy chuyển sang Đăng nhập để sử dụng hệ thống.`);
         
         // Keep the registration result visible until the user chooses the next step.
