@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
 import { Calendar, CheckCircle, Clock, FileText, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { API_BASE_URL } from '../../services/ApiService';
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -18,10 +19,8 @@ const EmployeeDashboard = () => {
     const fetchEmployeeData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-
         // Fetch employee profile
-        const empRes = await fetch(`${apiUrl}/employees/profile/me`, {
+        const empRes = await fetch(`${API_BASE_URL}/employees/profile/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (empRes.ok) {
@@ -29,7 +28,7 @@ const EmployeeDashboard = () => {
         }
 
         // Fetch leaves - filter by current employee
-        const leavesRes = await fetch(`${apiUrl}/leaves`, {
+        const leavesRes = await fetch(`${API_BASE_URL}/leaves`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (leavesRes.ok) {
@@ -44,7 +43,7 @@ const EmployeeDashboard = () => {
         }
 
         // Fetch expenses - filter by current employee
-        const expensesRes = await fetch(`${apiUrl}/expenses`, {
+        const expensesRes = await fetch(`${API_BASE_URL}/expenses`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (expensesRes.ok) {
@@ -53,7 +52,7 @@ const EmployeeDashboard = () => {
         }
 
         // Fetch salaries - filter by current employee
-        const salariesRes = await fetch(`${apiUrl}/salary`, {
+        const salariesRes = await fetch(`${API_BASE_URL}/salary`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (salariesRes.ok) {

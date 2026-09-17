@@ -1,6 +1,32 @@
 // Remove trailing slash from API_BASE_URL to avoid double slashes
-const configuredApiUrl = (process.env.REACT_APP_API_URL || 'http://localhost:5000').replace(/\/$/, '');
-const API_BASE_URL = configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`;
+const defaultApiUrl = process.env.NODE_ENV === 'production'
+  ? 'https://doantotnghiep253.onrender.com/api'
+  : 'http://localhost:5000/api';
+const configuredApiUrl = (process.env.REACT_APP_API_URL || defaultApiUrl).replace(/\/$/, '');
+export const API_BASE_URL = configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`;
+
+const parseResponse = async (response, fallbackMessage) => {
+  const contentType = response.headers.get('content-type') || '';
+  const body = await response.text();
+  let data = null;
+
+  if (body && contentType.includes('application/json')) {
+    try {
+      data = JSON.parse(body);
+    } catch (error) {
+      data = null;
+    }
+  }
+
+  if (!response.ok) {
+    throw new Error(data?.message || `${fallbackMessage} (HTTP ${response.status})`);
+  }
+
+  if (!data) {
+    throw new Error(`${fallbackMessage}: máy chủ trả về dữ liệu không hợp lệ`);
+  }
+  return data;
+};
 
 // Debug logging
 if (typeof window !== 'undefined') {
@@ -35,11 +61,7 @@ const ApiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.message || 'Đăng nhập thất bại');
-    }
-    return data;
+    return parseResponse(response, 'Đăng nhập thất bại');
   },
 
   register: async (username, password, name, role) => {
@@ -48,7 +70,7 @@ const ApiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password, name, role }),
     });
-    return response.json();
+    return parseResponse(response, 'Đăng ký thất bại');
   },
 
   // Helper function to get auth header

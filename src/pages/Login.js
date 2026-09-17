@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn, Users, Lock } from 'lucide-react';
+import { API_BASE_URL } from '../services/ApiService';
 
 const Login = () => {
   const [mode, setMode] = useState('login'); // 'login' or 'register'
@@ -87,8 +88,7 @@ const Login = () => {
 
       // Send registration to backend
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-        const response = await fetch(`${apiUrl}/auth/register`, {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -102,10 +102,11 @@ const Login = () => {
           }),
         });
 
-        const data = await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        const data = contentType.includes('application/json') ? await response.json() : {};
 
         if (!response.ok) {
-          setError(data.message || 'Đăng ký thất bại');
+          setError(data.message || `Đăng ký thất bại (HTTP ${response.status})`);
           return;
         }
 
