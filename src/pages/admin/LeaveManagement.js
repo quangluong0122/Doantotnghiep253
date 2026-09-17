@@ -1,42 +1,57 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import { CheckCircle, XCircle, Clock, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import ApiService from '../../services/ApiService';
+
+const leaveTypeLabels = {
+  annual: 'Nghỉ phép năm',
+  sick: 'Nghỉ ốm',
+  personal: 'Nghỉ việc riêng',
+  unpaid: 'Nghỉ không lương',
+};
+
+const formatDate = (date) => new Date(date).toLocaleDateString('vi-VN');
 
 const LeaveManagement = () => {
-  const [leaveRequests, setLeaveRequests] = useState([
-    { id: 1, employeeId: 'EMP001', employeeName: 'Nguyễn Văn A', leaveType: 'Nghỉ phép', startDate: '10/01/2026', endDate: '12/01/2026', days: 3, reason: 'Du lịch gia đình', status: 'pending', requestDate: '05/01/2026' },
-    { id: 2, employeeId: 'EMP002', employeeName: 'Trần Thị B', leaveType: 'Nghỉ ốm', startDate: '08/01/2026', endDate: '09/01/2026', days: 2, reason: 'Bị cảm', status: 'approved', requestDate: '06/01/2026' },
-    { id: 3, employeeId: 'EMP003', employeeName: 'Lê Văn C', leaveType: 'Nghỉ phép', startDate: '15/01/2026', endDate: '20/01/2026', days: 6, reason: 'Nghỉ dưỡng sức', status: 'pending', requestDate: '04/01/2026' },
-    { id: 4, employeeId: 'EMP004', employeeName: 'Phạm Thị D', leaveType: 'Nghỉ việc riêng', startDate: '07/01/2026', endDate: '07/01/2026', days: 1, reason: 'Đi giải quyết việc cá nhân', status: 'approved', requestDate: '03/01/2026' },
-    { id: 5, employeeId: 'EMP005', employeeName: 'Hoàng Văn E', leaveType: 'Nghỉ phép', startDate: '20/01/2026', endDate: '25/01/2026', days: 6, reason: 'Về quê nghỉ Tết', status: 'pending', requestDate: '05/01/2026' },
-    { id: 6, employeeId: 'EMP006', employeeName: 'Vũ Thị F', leaveType: 'Nghỉ ốm', startDate: '05/01/2026', endDate: '06/01/2026', days: 2, reason: 'Đau dạ dày', status: 'approved', requestDate: '04/01/2026' },
-    { id: 7, employeeId: 'EMP007', employeeName: 'Đỗ Văn G', leaveType: 'Nghỉ phép', startDate: '12/01/2026', endDate: '14/01/2026', days: 3, reason: 'Tham gia hội thảo', status: 'pending', requestDate: '06/01/2026' },
-    { id: 8, employeeId: 'EMP008', employeeName: 'Bùi Thị H', leaveType: 'Nghỉ việc riêng', startDate: '09/01/2026', endDate: '09/01/2026', days: 1, reason: 'Đi khám bệnh', status: 'pending', requestDate: '07/01/2026' },
-    { id: 9, employeeId: 'EMP009', employeeName: 'Đinh Văn I', leaveType: 'Nghỉ phép', startDate: '18/01/2026', endDate: '22/01/2026', days: 5, reason: 'Nghỉ thăm gia đình', status: 'approved', requestDate: '02/01/2026' },
-    { id: 10, employeeId: 'EMP010', employeeName: 'Mai Thị K', leaveType: 'Nghỉ ốm', startDate: '03/01/2026', endDate: '04/01/2026', days: 2, reason: 'Sốt cao', status: 'approved', requestDate: '02/01/2026' },
-    { id: 11, employeeId: 'EMP011', employeeName: 'Lý Văn L', leaveType: 'Nghỉ phép', startDate: '25/01/2026', endDate: '30/01/2026', days: 6, reason: 'Nghỉ Tết Nguyên Đán', status: 'pending', requestDate: '05/01/2026' },
-    { id: 12, employeeId: 'EMP012', employeeName: 'Trương Thị M', leaveType: 'Nghỉ việc riêng', startDate: '11/01/2026', endDate: '11/01/2026', days: 1, reason: 'Đi làm thủ tục hành chính', status: 'rejected', requestDate: '08/01/2026' },
-    { id: 13, employeeId: 'EMP013', employeeName: 'Phan Văn N', leaveType: 'Nghỉ phép', startDate: '16/01/2026', endDate: '17/01/2026', days: 2, reason: 'Tham dự đám cưới', status: 'approved', requestDate: '04/01/2026' },
-    { id: 14, employeeId: 'EMP014', employeeName: 'Cao Thị O', leaveType: 'Nghỉ ốm', startDate: '02/01/2026', endDate: '03/01/2026', days: 2, reason: 'Đau răng', status: 'approved', requestDate: '01/01/2026' },
-    { id: 15, employeeId: 'EMP015', employeeName: 'Tô Văn P', leaveType: 'Nghỉ phép', startDate: '22/01/2026', endDate: '28/01/2026', days: 7, reason: 'Du lịch nước ngoài', status: 'pending', requestDate: '06/01/2026' },
-  ]);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadLeaveRequests = async () => {
+    const rows = await ApiService.getLeaves();
+    setLeaveRequests(rows.map((leave) => ({
+      ...leave,
+      employeeId: leave.employee_id,
+      employeeName: leave.employee_name || 'Không rõ nhân viên',
+      leaveType: leaveTypeLabels[leave.leave_type] || leave.leave_type,
+      startDate: formatDate(leave.start_date),
+      endDate: formatDate(leave.end_date),
+      days: Math.floor((new Date(leave.end_date) - new Date(leave.start_date)) / 86400000) + 1,
+      requestDate: formatDate(leave.created_at),
+    })));
+  };
+
+  useEffect(() => {
+    loadLeaveRequests().catch(() => setLeaveRequests([])).finally(() => setLoading(false));
+  }, []);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  const handleApprove = (id) => {
-    setLeaveRequests(prev =>
-      prev.map(req => req.id === id ? { ...req, status: 'approved' } : req)
-    );
-    alert('Đã chấp nhận đơn nghỉ phép');
+  const handleApprove = async (id) => {
+    try {
+      await ApiService.updateLeave(id, 'approved');
+      await loadLeaveRequests();
+      alert('Đã chấp nhận đơn nghỉ phép');
+    } catch (error) { alert(error.message); }
   };
 
-  const handleReject = (id) => {
-    setLeaveRequests(prev =>
-      prev.map(req => req.id === id ? { ...req, status: 'rejected' } : req)
-    );
-    alert('Đã từ chối đơn nghỉ phép');
+  const handleReject = async (id) => {
+    try {
+      await ApiService.updateLeave(id, 'rejected');
+      await loadLeaveRequests();
+      alert('Đã từ chối đơn nghỉ phép');
+    } catch (error) { alert(error.message); }
   };
 
   const filteredRequests = leaveRequests.filter(req =>
@@ -47,7 +62,7 @@ const LeaveManagement = () => {
     req.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(filteredRequests.length / itemsPerPage));
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedRequests = filteredRequests.slice(startIndex, startIndex + itemsPerPage);
 
@@ -128,6 +143,8 @@ const LeaveManagement = () => {
                 </tr>
               </thead>
               <tbody>
+                {loading && <tr><td colSpan="7" className="py-8 text-center text-gray-500">Đang tải đơn nghỉ phép...</td></tr>}
+                {!loading && paginatedRequests.length === 0 && <tr><td colSpan="7" className="py-8 text-center text-gray-500">Chưa có đơn nghỉ phép nào.</td></tr>}
                 {paginatedRequests.map((request, idx) => (
                   <tr key={request.id} className="border-b hover:bg-gray-50 transition-all duration-200 table-row-enter" style={{animationDelay: `${idx * 40}ms`}}>
                     <td className="py-4 px-4">

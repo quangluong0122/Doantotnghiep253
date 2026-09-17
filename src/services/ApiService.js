@@ -1,5 +1,6 @@
 // Remove trailing slash from API_BASE_URL to avoid double slashes
-const API_BASE_URL = (process.env.REACT_APP_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+const configuredApiUrl = (process.env.REACT_APP_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+const API_BASE_URL = configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`;
 
 // Debug logging
 if (typeof window !== 'undefined') {
@@ -108,7 +109,9 @@ const ApiService = {
     const response = await fetch(`${API_BASE_URL}/leaves`, {
       headers: ApiService.getAuthHeader(),
     });
-    return response.json();
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Không thể tải đơn nghỉ phép');
+    return data;
   },
 
   createLeave: async (data) => {
@@ -120,7 +123,9 @@ const ApiService = {
       },
       body: JSON.stringify(data),
     });
-    return response.json();
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'Không thể tạo đơn nghỉ phép');
+    return result;
   },
 
   updateLeave: async (id, status) => {
@@ -132,7 +137,9 @@ const ApiService = {
       },
       body: JSON.stringify({ status }),
     });
-    return response.json();
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'Không thể cập nhật đơn nghỉ phép');
+    return result;
   },
 
   // Attendance
