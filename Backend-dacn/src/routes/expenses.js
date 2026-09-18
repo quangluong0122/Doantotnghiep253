@@ -26,6 +26,32 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
+// Get expense totals for a month
+router.get('/summary', verifyToken, async (req, res) => {
+  const month = req.query.month || new Date().toISOString().slice(0, 7);
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) {
+    return res.status(400).json({ message: 'Tháng phải có định dạng YYYY-MM' });
+  }
+
+  try {
+    const connection = await pool.getConnection();
+    const employeeFilter = req.user.role === 'admin' ? '' : 'AND emp.user_id = ?';
+    const params = req.user.role === 'admin' ? [month] : [month, req.user.id];
+    const [rows] = await connection.execute(
+      `SELECT
+        COALESCE(SUM(e.amount), 0) AS total_amount,
+        COALESCE(SUM(CASE WHEN e.status IN ('approved', 'paid') THEN e.amount ELSE 0 END), 0) AS approved_amount
+       FROM expenses e INNER JOIN employees emp ON emp.id = e.employee_id
+       WHERE DATE_FORMAT(e.date, '%Y-%m') = ? ${employeeFilter}`,
+      params
+    );
+    connection.release();
+    res.json({ month, total_amount: Number(rows[0].total_amount), approved_amount: Number(rows[0].approved_amount) });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Create expense
 router.post('/', verifyToken, async (req, res) => {
   const { amount, description, category, date } = req.body;

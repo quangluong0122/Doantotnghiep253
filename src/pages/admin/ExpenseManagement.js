@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
-import { Search, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, DollarSign, BarChart3 } from 'lucide-react';
 import ApiService from '../../services/ApiService';
 
 const ExpenseManagement = () => {
@@ -9,12 +9,19 @@ const ExpenseManagement = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [summary, setSummary] = useState({ total_amount: 0, approved_amount: 0 });
   const itemsPerPage = 8;
 
   const loadExpenses = async () => {
     try {
       setLoading(true);
-      setExpenses(await ApiService.getExpenses());
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      const [expenseRows, expenseSummary] = await Promise.all([
+        ApiService.getExpenses(),
+        ApiService.getExpenseSummary(currentMonth),
+      ]);
+      setExpenses(expenseRows);
+      setSummary(expenseSummary);
       setError('');
     } catch (loadError) {
       setError(loadError.message || 'Không thể tải danh sách chi phí');
@@ -57,8 +64,9 @@ const ExpenseManagement = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedExpenses = filteredExpenses.slice(startIndex, startIndex + itemsPerPage);
 
-  const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const approvedExpenses = expenses.filter(exp => exp.status === 'approved').reduce((sum, exp) => sum + exp.amount, 0);
+  const totalExpenses = Number(summary.total_amount) || 0;
+  const approvedExpenses = Number(summary.approved_amount) || 0;
+  const chartMax = Math.max(totalExpenses, approvedExpenses, 1);
 
   return (
     <Layout>
@@ -86,6 +94,25 @@ const ExpenseManagement = () => {
               </div>
               <DollarSign className="w-12 h-12 text-green-500" />
             </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
+          <div className="flex items-center gap-3 mb-5">
+            <BarChart3 className="h-6 w-6 text-blue-600" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-800">Biểu Đồ Chi Phí Tháng Này</h2>
+              <p className="text-sm text-gray-500">So sánh tổng chi phí và phần đã được duyệt</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-6 items-end h-48 max-w-lg">
+            {[{ label: 'Tổng chi phí', value: totalExpenses, color: 'bg-blue-500' }, { label: 'Đã duyệt', value: approvedExpenses, color: 'bg-green-500' }].map((item) => (
+              <div key={item.label} className="h-full flex flex-col justify-end items-center gap-2">
+                <span className="text-sm font-semibold text-gray-700">{formatCurrency(item.value)}</span>
+                <div className={`w-20 max-w-full ${item.color} rounded-t-lg transition-all`} style={{ height: `${Math.max((item.value / chartMax) * 120, item.value ? 8 : 2)}px` }} />
+                <span className="text-sm text-gray-600 text-center">{item.label}</span>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -135,7 +162,7 @@ const ExpenseManagement = () => {
                             ? 'bg-red-100 text-red-800 border border-red-200'
                             : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
                       }`}>
-                        {expense.status === 'approved' ? '✓ Đã duyệt' : expense.status === 'rejected' ? '✕ Từ chối' : '⏳ Chờ duyệt'}
+                        {['approved', 'paid'].includes(expense.status) ? '✓ Đã duyệt' : expense.status === 'rejected' ? '✕ Từ chối' : '⏳ Chờ duyệt'}
                       </span>
                       {expense.status === 'pending' && <div className="mt-2 flex gap-2">
                         <button onClick={() => handleExpenseStatus(expense.id, 'approved')} className="rounded bg-green-600 px-2 py-1 text-xs text-white hover:bg-green-700">Duyệt</button>

@@ -9,13 +9,25 @@ router.get('/', verifyToken, async (req, res) => {
   try {
     const connection = await pool.getConnection();
     const query = req.user.role === 'admin'
-      ? 'SELECT * FROM attendance'
+      ? `SELECT a.*, TIMESTAMPDIFF(MINUTE, a.check_in_time, a.check_out_time) AS work_duration_minutes,
+           CASE WHEN a.check_in_time IS NULL OR a.check_out_time IS NULL THEN NULL
+                ELSE CONCAT(FLOOR(TIMESTAMPDIFF(MINUTE, a.check_in_time, a.check_out_time) / 60), ' giờ ',
+                  MOD(TIMESTAMPDIFF(MINUTE, a.check_in_time, a.check_out_time), 60), ' phút') END AS work_duration
+         FROM attendance a ORDER BY a.check_in_date DESC, a.id DESC`
       : `SELECT a.* FROM attendance a
          INNER JOIN employees e ON e.id = a.employee_id
          WHERE e.user_id = ? ORDER BY a.check_in_date DESC, a.id DESC`;
     
     const params = req.user.role === 'admin' ? [] : [req.user.id];
-    const [rows] = await connection.execute(query, params);
+        const scopedQuery = req.user.role === 'admin'
+       ? query
+       : `SELECT a.*, TIMESTAMPDIFF(MINUTE, a.check_in_time, a.check_out_time) AS work_duration_minutes,
+         CASE WHEN a.check_in_time IS NULL OR a.check_out_time IS NULL THEN NULL
+           ELSE CONCAT(FLOOR(TIMESTAMPDIFF(MINUTE, a.check_in_time, a.check_out_time) / 60), ' giờ ',
+             MOD(TIMESTAMPDIFF(MINUTE, a.check_in_time, a.check_out_time), 60), ' phút') END AS work_duration
+          FROM attendance a INNER JOIN employees e ON e.id = a.employee_id
+          WHERE e.user_id = ? ORDER BY a.check_in_date DESC, a.id DESC`;
+        const [rows] = await connection.execute(scopedQuery, params);
     connection.release();
 
     res.json(rows);

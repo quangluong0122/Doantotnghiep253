@@ -13,7 +13,7 @@ const AttendanceHistory = () => {
       checkIn: row.check_in_time ? new Date(row.check_in_time).toLocaleTimeString('vi-VN') : 'N/A',
       checkOut: row.check_out_time ? new Date(row.check_out_time).toLocaleTimeString('vi-VN') : 'N/A',
       status: row.status === 'present' ? 'on-time' : row.status,
-      duration: '-'
+      duration: row.work_duration || '-'
     })))).catch(() => setAttendance([]));
   }, []);
 

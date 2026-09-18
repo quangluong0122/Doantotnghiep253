@@ -172,6 +172,15 @@ const ApiService = {
     return response.json();
   },
 
+  getExpenseSummary: async (month) => {
+    const response = await fetch(`${API_BASE_URL}/expenses/summary?month=${encodeURIComponent(month)}`, {
+      headers: ApiService.getAuthHeader(),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Không thể tải tổng hợp chi phí');
+    return data;
+  },
+
   checkIn: async () => {
     const response = await fetch(`${API_BASE_URL}/attendance/checkin`, {
       method: 'POST',
@@ -225,7 +234,9 @@ const ApiService = {
       },
       body: JSON.stringify(data),
     });
-    return response.json();
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || 'Không thể tạo đề xuất chi phí');
+    return result;
   },
 
   updateExpense: async (id, status) => {

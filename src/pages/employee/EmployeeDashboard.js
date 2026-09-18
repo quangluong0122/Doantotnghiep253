@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../../components/Layout';
 import { useAuth } from '../../context/AuthContext';
-import { Calendar, CheckCircle, Clock, FileText, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { API_BASE_URL } from '../../services/ApiService';
+import { Calendar, CheckCircle, Clock, FileText, Search, ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import ApiService, { API_BASE_URL } from '../../services/ApiService';
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -10,6 +10,10 @@ const EmployeeDashboard = () => {
   const [leaves, setLeaves] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [salaries, setSalaries] = useState([]);
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({ amount: '', category: '', date: new Date().toISOString().slice(0, 10), description: '' });
+  const [expenseError, setExpenseError] = useState('');
+  const [submittingExpense, setSubmittingExpense] = useState(false);
   const [salarySearch, setSalarySearch] = useState('');
   const [salaryPage, setSalaryPage] = useState(1);
   const itemsPerPage = 8;
@@ -68,6 +72,26 @@ const EmployeeDashboard = () => {
       fetchEmployeeData();
     }
   }, [user]);
+
+  const submitExpense = async (event) => {
+    event.preventDefault();
+    setExpenseError('');
+    if (Number(expenseForm.amount) <= 0) {
+      setExpenseError('Số tiền phải lớn hơn 0.');
+      return;
+    }
+    setSubmittingExpense(true);
+    try {
+      await ApiService.createExpense({ ...expenseForm, amount: Number(expenseForm.amount) });
+      setExpenses((await ApiService.getExpenses()).slice(0, 10));
+      setExpenseForm({ amount: '', category: '', date: new Date().toISOString().slice(0, 10), description: '' });
+      setShowExpenseForm(false);
+    } catch (submitError) {
+      setExpenseError(submitError.message || 'Không thể gửi đề xuất chi phí');
+    } finally {
+      setSubmittingExpense(false);
+    }
+  };
 
   const stats = [
     { 
@@ -221,12 +245,37 @@ const EmployeeDashboard = () => {
   return (
     <Layout>
       <div className="animate-fadeIn">
-        <div className="mb-8 bg-gradient-to-r from-indigo-100 to-purple-100 p-6 rounded-2xl border border-indigo-200">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-            👋 Xin chào, {employee ? `${employee.first_name} ${employee.last_name}` : user?.name || 'Nhân viên'}
-          </h1>
-          <p className="text-gray-600 text-lg">Chào mừng bạn trở lại với hệ thống quản lý</p>
+        <div className="mb-8 bg-gradient-to-r from-indigo-100 to-purple-100 p-6 rounded-2xl border border-indigo-200 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+              👋 Xin chào, {employee ? `${employee.first_name} ${employee.last_name}` : user?.name || 'Nhân viên'}
+            </h1>
+            <p className="text-gray-600 text-lg">Chào mừng bạn trở lại với hệ thống quản lý</p>
+          </div>
+          <button onClick={() => { setExpenseError(''); setShowExpenseForm(true); }} className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+            <Plus className="w-5 h-5" />
+            <span>Tạo đề xuất chi phí</span>
+          </button>
         </div>
+
+        {showExpenseForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <form onSubmit={submitExpense} className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+              <div className="mb-5 flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-800">Tạo đề xuất chi phí</h2>
+                <button type="button" onClick={() => setShowExpenseForm(false)} className="rounded p-1 text-gray-500 hover:bg-gray-100" aria-label="Đóng"><X className="h-5 w-5" /></button>
+              </div>
+              {expenseError && <p className="mb-4 rounded bg-red-50 p-3 text-sm text-red-700">{expenseError}</p>}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="text-sm font-medium text-gray-700">Số tiền<input type="number" min="1" step="1000" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 p-2.5" required /></label>
+                <label className="text-sm font-medium text-gray-700">Danh mục<input type="text" value={expenseForm.category} onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 p-2.5" placeholder="Ví dụ: Công tác phí" required /></label>
+                <label className="text-sm font-medium text-gray-700">Ngày chi<input type="date" value={expenseForm.date} onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 p-2.5" required /></label>
+              </div>
+              <label className="mt-4 block text-sm font-medium text-gray-700">Mô tả<textarea value={expenseForm.description} onChange={(e) => setExpenseForm({ ...expenseForm, description: e.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 p-2.5" rows="3" required /></label>
+              <button disabled={submittingExpense} className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-60">{submittingExpense ? 'Đang gửi...' : 'Gửi đề xuất'}</button>
+            </form>
+          </div>
+        )}
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
