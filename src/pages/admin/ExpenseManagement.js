@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
-import { Search, ChevronLeft, ChevronRight, DollarSign, BarChart3 } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, DollarSign } from 'lucide-react';
 import ApiService from '../../services/ApiService';
 
 const ExpenseManagement = () => {
@@ -9,16 +9,16 @@ const ExpenseManagement = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [summary, setSummary] = useState({ total_amount: 0, approved_amount: 0 });
   const itemsPerPage = 8;
 
-  const loadExpenses = async () => {
+  const loadExpenses = useCallback(async () => {
     try {
       setLoading(true);
-      const currentMonth = new Date().toISOString().slice(0, 7);
       const [expenseRows, expenseSummary] = await Promise.all([
         ApiService.getExpenses(),
-        ApiService.getExpenseSummary(currentMonth),
+        ApiService.getExpenseSummary(selectedMonth),
       ]);
       setExpenses(expenseRows);
       setSummary(expenseSummary);
@@ -28,11 +28,11 @@ const ExpenseManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedMonth]);
 
   useEffect(() => {
     loadExpenses();
-  }, []);
+  }, [loadExpenses]);
 
   const handleExpenseStatus = async (id, status) => {
     try {
@@ -66,7 +66,6 @@ const ExpenseManagement = () => {
 
   const totalExpenses = Number(summary.total_amount) || 0;
   const approvedExpenses = Number(summary.approved_amount) || 0;
-  const chartMax = Math.max(totalExpenses, approvedExpenses, 1);
 
   return (
     <Layout>
@@ -74,12 +73,25 @@ const ExpenseManagement = () => {
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Quản Lý Chi Phí</h1>
         <p className="text-gray-600 mb-8">Quản lý chi phí hoạt động của công ty</p>
 
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-xl font-bold text-gray-800">Tổng hợp chi phí</h2>
+          <label className="flex items-center gap-3 text-sm font-medium text-gray-700">
+            Chọn tháng
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(event) => setSelectedMonth(event.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+            />
+          </label>
+        </div>
+
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div className="bg-blue-50 rounded-2xl shadow-lg p-6 border border-blue-100" style={{animation: 'slideUp 0.5s ease-out 0ms backwards'}}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm">Tổng Chi Phí Tháng Này</p>
+                <p className="text-gray-600 text-sm">Tổng Chi Phí Tháng Đã Chọn</p>
                 <p className="text-3xl font-bold text-blue-600">{formatCurrency(totalExpenses)}</p>
               </div>
               <DollarSign className="w-12 h-12 text-blue-500" />
@@ -94,25 +106,6 @@ const ExpenseManagement = () => {
               </div>
               <DollarSign className="w-12 h-12 text-green-500" />
             </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
-          <div className="flex items-center gap-3 mb-5">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">Biểu Đồ Chi Phí Tháng Này</h2>
-              <p className="text-sm text-gray-500">So sánh tổng chi phí và phần đã được duyệt</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-6 items-end h-48 max-w-lg">
-            {[{ label: 'Tổng chi phí', value: totalExpenses, color: 'bg-blue-500' }, { label: 'Đã duyệt', value: approvedExpenses, color: 'bg-green-500' }].map((item) => (
-              <div key={item.label} className="h-full flex flex-col justify-end items-center gap-2">
-                <span className="text-sm font-semibold text-gray-700">{formatCurrency(item.value)}</span>
-                <div className={`w-20 max-w-full ${item.color} rounded-t-lg transition-all`} style={{ height: `${Math.max((item.value / chartMax) * 120, item.value ? 8 : 2)}px` }} />
-                <span className="text-sm text-gray-600 text-center">{item.label}</span>
-              </div>
-            ))}
           </div>
         </div>
 

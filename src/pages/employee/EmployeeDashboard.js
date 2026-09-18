@@ -302,6 +302,17 @@ const EmployeeDashboard = () => {
           })}
         </div>
 
+        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+          <div>
+            <h2 className="text-xl font-bold text-gray-800">Đề xuất chi phí</h2>
+            <p className="mt-1 text-sm text-gray-600">Gửi các khoản chi phí phát sinh để quản lý xem xét và phê duyệt.</p>
+          </div>
+          <button onClick={() => { setExpenseError(''); setShowExpenseForm(true); }} className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">
+            <Plus className="h-5 w-5" />
+            <span>Tạo đề xuất chi phí</span>
+          </button>
+        </div>
+
         {/* Leaves Table */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8 section-enter" style={{animationDelay: '0.1s'}}>
           <TableHeader title="Đơn Nghỉ Phép" description="Quản lý và theo dõi các đơn nghỉ phép của bạn" />
