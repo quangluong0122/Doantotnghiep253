@@ -245,17 +245,13 @@ const EmployeeDashboard = () => {
   return (
     <Layout>
       <div className="animate-fadeIn">
-        <div className="mb-8 bg-gradient-to-r from-indigo-100 to-purple-100 p-6 rounded-2xl border border-indigo-200 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-8 bg-gradient-to-r from-indigo-100 to-purple-100 p-6 rounded-2xl border border-indigo-200">
           <div>
             <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
               👋 Xin chào, {employee ? `${employee.first_name} ${employee.last_name}` : user?.name || 'Nhân viên'}
             </h1>
             <p className="text-gray-600 text-lg">Chào mừng bạn trở lại với hệ thống quản lý</p>
           </div>
-          <button onClick={() => { setExpenseError(''); setShowExpenseForm(true); }} className="bg-blue-600 text-white px-5 py-3 rounded-lg hover:bg-blue-700 flex items-center gap-2">
-            <Plus className="w-5 h-5" />
-            <span>Tạo đề xuất chi phí</span>
-          </button>
         </div>
 
         {showExpenseForm && (
@@ -300,17 +296,6 @@ const EmployeeDashboard = () => {
               </div>
             );
           })}
-        </div>
-
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
-          <div>
-            <h2 className="text-xl font-bold text-gray-800">Đề xuất chi phí</h2>
-            <p className="mt-1 text-sm text-gray-600">Gửi các khoản chi phí phát sinh để quản lý xem xét và phê duyệt.</p>
-          </div>
-          <button onClick={() => { setExpenseError(''); setShowExpenseForm(true); }} className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-3 font-semibold text-white hover:bg-blue-700">
-            <Plus className="h-5 w-5" />
-            <span>Tạo đề xuất chi phí</span>
-          </button>
         </div>
 
         {/* Leaves Table */}
@@ -361,7 +346,16 @@ const EmployeeDashboard = () => {
 
         {/* Expenses Table */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8 section-enter" style={{animationDelay: '0.2s'}}>
-          <TableHeader title="Chi Phí" description="Danh sách các chi phí của bạn" />
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">Chi Phí</h2>
+              <p className="text-gray-500 text-sm">Danh sách các chi phí của bạn</p>
+            </div>
+            <button onClick={() => { setExpenseError(''); setShowExpenseForm(true); }} className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 font-semibold text-white hover:bg-blue-700">
+              <Plus className="h-5 w-5" />
+              <span>Tạo đề xuất chi phí</span>
+            </button>
+          </div>
           <SearchInput 
             value={expensesSearch} 
             onChange={(val) => { setExpensesSearch(val); setExpensesPage(1); }}
