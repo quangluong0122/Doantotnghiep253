@@ -54,8 +54,17 @@ router.get('/employee/:employeeId/details', verifyToken, verifyRole(['admin']), 
 router.post('/', verifyToken, verifyRole(['admin']), async (req, res) => {
   const { employee_id, metric, target, actual, period } = req.body;
 
+  if (!employee_id || !metric?.trim() || !period?.trim() || Number(target) <= 0 || Number(actual) < 0) {
+    return res.status(400).json({ message: 'Thông tin KPI không hợp lệ' });
+  }
+
   try {
     const connection = await pool.getConnection();
+    const [employees] = await connection.execute('SELECT id FROM employees WHERE id = ?', [employee_id]);
+    if (!employees.length) {
+      connection.release();
+      return res.status(404).json({ message: 'Nhân viên không tồn tại' });
+    }
     const [result] = await connection.execute(
       'INSERT INTO kpis (employee_id, metric, target, actual, period) VALUES (?, ?, ?, ?, ?)',
       [employee_id, metric, target, actual, period]

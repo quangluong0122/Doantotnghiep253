@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
-import { Search, ChevronLeft, ChevronRight, Plus, Eye } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, Plus, Eye, X } from 'lucide-react';
 import ApiService from '../../services/ApiService';
 
 const KPIManagement = () => {
   const [kpis, setKpis] = useState([]);
   const [selectedKpi, setSelectedKpi] = useState(null);
   const [history, setHistory] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createForm, setCreateForm] = useState({ employee_id: '', metric: '', target: '', actual: '', period: '' });
+  const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,7 +22,11 @@ const KPIManagement = () => {
   useEffect(() => {
     const loadKpis = async () => {
       try {
-        const rows = await ApiService.getKPIs();
+        const [rows, employeeRows] = await Promise.all([
+          ApiService.getKPIs(),
+          ApiService.getEmployees(),
+        ]);
+        setEmployees(employeeRows);
         setKpis(rows.map((row) => ({
           ...row,
           employeeId: row.employee_code,
@@ -36,6 +44,42 @@ const KPIManagement = () => {
     };
     loadKpis();
   }, []);
+
+  const handleCreateKpi = async (event) => {
+    event.preventDefault();
+    setError('');
+    if (Number(createForm.target) <= 0) {
+      setError('Mục tiêu KPI phải lớn hơn 0.');
+      return;
+    }
+    if (Number(createForm.actual) < 0) {
+      setError('Thực tế không được nhỏ hơn 0.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await ApiService.createKPI({
+        ...createForm,
+        target: Number(createForm.target),
+        actual: Number(createForm.actual),
+      });
+      const rows = await ApiService.getKPIs();
+      setKpis(rows.map((row) => ({
+        ...row,
+        employeeId: row.employee_code,
+        name: row.employee_name,
+        department: row.department,
+        percentage: Number(row.target) ? (Number(row.actual || 0) / Number(row.target)) * 100 : 0,
+      })));
+      setCreateForm({ employee_id: '', metric: '', target: '', actual: '', period: '' });
+      setShowCreateForm(false);
+    } catch (createError) {
+      setError(createError.message || 'Không thể tạo KPI');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const openDetails = async (kpi) => {
     try {
@@ -92,11 +136,41 @@ const KPIManagement = () => {
       <div>
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">Quản Lý KPI</h1>
-          <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
+          <button onClick={() => { setError(''); setShowCreateForm(true); }} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 flex items-center space-x-2">
             <Plus className="w-5 h-5" />
             <span>Tạo KPI Mới</span>
           </button>
         </div>
+
+        {showCreateForm && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <form onSubmit={handleCreateKpi} className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl">
+            <div className="mb-5 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-800">Tạo KPI mới</h2>
+              <button type="button" onClick={() => setShowCreateForm(false)} className="rounded p-1 text-gray-500 hover:bg-gray-100" aria-label="Đóng"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-medium text-gray-700 sm:col-span-2">Nhân viên
+                <select value={createForm.employee_id} onChange={(event) => setCreateForm({ ...createForm, employee_id: event.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 p-2.5" required>
+                  <option value="">Chọn nhân viên</option>
+                  {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.employee_id} - {employee.first_name} {employee.last_name}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-medium text-gray-700 sm:col-span-2">Chỉ tiêu
+                <input type="text" value={createForm.metric} onChange={(event) => setCreateForm({ ...createForm, metric: event.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 p-2.5" placeholder="Ví dụ: Doanh số tháng" required />
+              </label>
+              <label className="text-sm font-medium text-gray-700">Mục tiêu
+                <input type="number" min="0.01" step="any" value={createForm.target} onChange={(event) => setCreateForm({ ...createForm, target: event.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 p-2.5" required />
+              </label>
+              <label className="text-sm font-medium text-gray-700">Thực tế
+                <input type="number" min="0" step="any" value={createForm.actual} onChange={(event) => setCreateForm({ ...createForm, actual: event.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 p-2.5" required />
+              </label>
+              <label className="text-sm font-medium text-gray-700 sm:col-span-2">Kỳ đánh giá
+                <input type="text" value={createForm.period} onChange={(event) => setCreateForm({ ...createForm, period: event.target.value })} className="mt-1 w-full rounded-lg border border-gray-300 p-2.5" placeholder="Ví dụ: 2026-Q3 hoặc 2026-09" required />
+              </label>
+            </div>
+            <button disabled={submitting} className="mt-5 w-full rounded-lg bg-blue-600 px-4 py-2.5 font-medium text-white hover:bg-blue-700 disabled:opacity-60">{submitting ? 'Đang tạo...' : 'Tạo KPI'}</button>
+          </form>
+        </div>}
 
         {/* Search Bar */}
         <div className="bg-white rounded-lg shadow p-4 mb-6">
