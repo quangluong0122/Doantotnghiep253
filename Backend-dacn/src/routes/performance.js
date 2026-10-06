@@ -24,12 +24,12 @@ router.get('/summary', verifyToken, verifyRole(['admin']), async (req, res) => {
   try {
     connection = await pool.getConnection();
     const [rows] = await connection.execute(
-      `SELECT DATE_FORMAT(k.period, '%Y-%m') AS month,
+      `SELECT k.period AS month,
               AVG((k.actual / NULLIF(k.target, 0)) * 100) AS average_score,
               COUNT(DISTINCT k.employee_id) AS employees,
               SUM(k.actual >= k.target) AS completed
        FROM kpis k
-       GROUP BY DATE_FORMAT(k.period, '%Y-%m')
+       GROUP BY k.period
        ORDER BY month DESC
        LIMIT 13`
     );
@@ -66,7 +66,7 @@ router.get('/employee/:employeeId', verifyToken, async (req, res) => {
       ? 'e.id = ?'
       : 'e.user_id = ?';
     const [rows] = await connection.execute(
-      `SELECT DATE_FORMAT(k.period, '%Y-%m') AS month, k.metric, k.target, k.actual,
+      `SELECT k.period AS month, k.metric, k.target, k.actual,
               e.id AS employee_id, e.employee_id AS employee_code
        FROM kpis k INNER JOIN employees e ON e.id = k.employee_id
        WHERE ${employeeFilter}

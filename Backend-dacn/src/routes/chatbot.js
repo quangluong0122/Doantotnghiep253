@@ -2,6 +2,7 @@ import express from 'express';
 import pool from '../config/database.js';
 import { verifyToken } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
+import { searchHrDocuments } from '../knowledgeBase/hrDocuments.js';
 
 const router = express.Router();
 
@@ -80,7 +81,9 @@ const classifyIntent = (query) => {
     { name: 'attendance', terms: ['cham cong cua toi', 'lich su cham cong', 'di lam', 'gio vao', 'gio ra'] },
     { name: 'leave-history', terms: ['lich su nghi', 'cac don nghi', 'don nghi gan day'] },
     { name: 'leave-balance', terms: ['ngay phep', 'con lai', 'phep nam'] },
-    { name: 'kpi', terms: ['kpi', 'hieu suat', 'danh gia hieu suat', 'chi tieu'] },
+    { name: 'performance', terms: ['hieu suat cua toi', 'ket qua hieu suat', 'thong ke hieu suat', 'kpi cua toi'] },
+    { name: 'tasks', terms: ['nhiem vu cua toi', 'cong viec cua toi', 'task cua toi', 'lich su nhiem vu'] },
+    { name: 'kpi-policy', terms: ['quy dinh kpi', 'chinh sach kpi', 'danh gia hieu suat', 'chi tieu'] },
     { name: 'policy', terms: ['phuc loi', 'bao hiem', 'quy trinh', 'dong phuc', 'gio lam'] },
   ];
   const matches = intents.filter((intent) => intent.terms.some((term) => query.includes(term)));
@@ -183,6 +186,49 @@ router.post('/message', verifyToken, rateLimit({
       return res.json({ reply: `Các đơn nghỉ gần đây của bạn:\n${leaveText}` });
     }
 
+    if (employee && intent === 'tasks') {
+      const [rows] = await connection.execute(
+        `SELECT title, status, priority, due_date, completed_at
+         FROM tasks WHERE employee_id = ?
+         ORDER BY due_date IS NULL, due_date ASC, id DESC LIMIT 10`,
+        [employee.id]
+      );
+      if (!rows.length) return res.json({ reply: 'Bạn chưa có nhiệm vụ nào trên hệ thống.', intent });
+      const statusNames = { todo: 'chưa làm', 'in-progress': 'đang làm', completed: 'đã hoàn thành', blocked: 'bị chặn' };
+      const taskText = rows.map((task) =>
+        `- ${task.title}: ${statusNames[task.status] || task.status}, ưu tiên ${task.priority}, hạn ${task.due_date ? formatDate(task.due_date) : 'chưa đặt'}`
+      ).join('\n');
+      return res.json({ reply: `Lịch sử nhiệm vụ của bạn:\n${taskText}`, intent });
+    }
+
+    if (employee && intent === 'performance') {
+      const [rows] = await connection.execute(
+        `SELECT k.period AS month, SUM(k.target) AS target, SUM(k.actual) AS actual
+         FROM kpis k
+         WHERE k.employee_id = ?
+         GROUP BY k.period
+         ORDER BY month DESC LIMIT 6`,
+        [employee.id]
+      );
+      if (!rows.length) return res.json({ reply: 'Chưa có dữ liệu thống kê hiệu suất của bạn.', intent });
+      const [taskRows] = await connection.execute(
+        `SELECT COUNT(*) AS total_tasks,
+                SUM(status = 'completed') AS completed_tasks
+         FROM tasks WHERE employee_id = ?`,
+        [employee.id]
+      );
+      const taskSummary = taskRows[0] || { total_tasks: 0, completed_tasks: 0 };
+      const statistics = rows.map((row) => {
+        const score = Number(row.target) > 0 ? Math.round((Number(row.actual) / Number(row.target)) * 10000) / 100 : 0;
+        return `- ${row.month}: KPI ${score}%`;
+      }).join('\n');
+      return res.json({
+        reply: `Đây là thống kê hiệu suất đã ghi nhận, không phải dự đoán:\n${statistics}\n- Nhiệm vụ: hoàn thành ${taskSummary.completed_tasks || 0}/${taskSummary.total_tasks || 0}`,
+        intent,
+        predictive: false
+      });
+    }
+
     if (intent === 'leave-balance' || query.includes('ngay phep') || query.includes('con lai') || query.includes('phep nam')) {
       if (!employee) {
         return res.json({ reply: 'Tài khoản quản trị không có số ngày phép cá nhân.' });
@@ -220,8 +266,17 @@ router.post('/message', verifyToken, rateLimit({
       });
     }
 
+    const documents = searchHrDocuments(query);
+    if (documents.length) {
+      return res.json({
+        reply: `${documents.map((document) => `${document.title}: ${document.content}`).join('\n\n')}\n\nNguồn: tài liệu nội bộ.`,
+        intent: intent === 'kpi-policy' ? 'policy' : intent,
+        sources: documents.map((document) => document.id)
+      });
+    }
+
     const matchedFaq = faq.find((item) => item.keywords.some((keyword) => query.includes(normalize(keyword))));
-    if (matchedFaq) return res.json({ reply: matchedFaq.answer });
+    if (matchedFaq) return res.json({ reply: matchedFaq.answer, intent });
 
     return res.json({
       reply: 'Mình có thể hỗ trợ: thông tin hồ sơ cá nhân, bảng lương, lịch sử chấm công, lịch sử nghỉ phép, số ngày phép còn lại, trạng thái đơn nghỉ phép (ví dụ LV-12), KPI, chế độ phúc lợi, quy trình nghỉ phép, giờ làm việc và quy định về trang phục.'

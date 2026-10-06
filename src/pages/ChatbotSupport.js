@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 const ChatbotSupport = () => {
   const { logout } = useAuth();
   const [messages, setMessages] = useState([
-    { from: 'bot', text: 'Xin chào! Tôi là Chatbot Hỗ trợ. Bạn cần giúp gì về chính sách nhân sự hoặc nghỉ phép? (vd: "quy trình nghỉ phép", "số ngày phép còn lại", "trạng thái đơn LV-1001")', time: new Date() }
+    { from: 'bot', text: 'Xin chào! Tôi là Chatbot Hỗ trợ. Tôi có thể tra cứu chính sách nội bộ, dữ liệu cá nhân và thống kê hiệu suất đã ghi nhận (không dự đoán).', time: new Date() }
   ]);
   const [input, setInput] = useState('');
   const [loadingReply, setLoadingReply] = useState(false);
@@ -20,6 +20,8 @@ const ChatbotSupport = () => {
     'Quy trình nghỉ phép',
     'Số ngày phép còn lại',
     'Trạng thái đơn LV-1001',
+    'Nhiệm vụ của tôi',
+    'Thống kê hiệu suất của tôi',
     'Chế độ phúc lợi',
     'Quy định về trang phục',
     'Các loại phép hiện có',
