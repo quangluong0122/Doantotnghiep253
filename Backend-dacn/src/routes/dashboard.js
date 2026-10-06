@@ -18,11 +18,27 @@ router.get('/summary', verifyToken, verifyRole(['admin']), async (req, res) => {
       `SELECT COUNT(*) AS total, SUM(status IN ('paid', 'approved')) AS paid
        FROM salaries WHERE DATE_FORMAT(effective_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')`
     );
+    const [[latestKpi]] = await connection.query(
+      `SELECT period AS month,
+              AVG((actual / NULLIF(target, 0)) * 100) AS overall_percentage,
+              SUM(actual >= target) AS completed_count,
+              COUNT(*) AS total_count,
+              COUNT(DISTINCT employee_id) AS total_employees
+       FROM kpis
+       WHERE period = (SELECT MAX(period) FROM kpis)`
+    );
     res.json({
       employees: { total: Number(employees.total || 0), active: Number(employees.active || 0) },
       leaves: { total: Number(leaves.total || 0), pending: Number(leaves.pending || 0) },
       expenses: { total: Number(expenses.total || 0), approved: Number(expenses.approved || 0) },
       salary: { total: Number(salary.total || 0), paid: Number(salary.paid || 0) },
+      kpi: {
+        month: latestKpi.month || null,
+        overallPercentage: Math.round(Number(latestKpi.overall_percentage || 0) * 100) / 100,
+        completedCount: Number(latestKpi.completed_count || 0),
+        totalCount: Number(latestKpi.total_count || 0),
+        totalEmployees: Number(latestKpi.total_employees || 0),
+      },
     });
   } catch (error) {
     res.status(500).json({ message: 'Không thể tải tổng quan dashboard.' });

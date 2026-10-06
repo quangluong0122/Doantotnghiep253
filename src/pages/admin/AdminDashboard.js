@@ -37,16 +37,16 @@ const AdminDashboard = () => {
   const [kpiSummary, setKpiSummary] = useState({
     overallPercentage: 0,
     completedCount: 0,
+    totalCount: 0,
     totalEmployees: 0,
-    trend: 'Chưa có dữ liệu'
+    month: null
   });
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [summary, kpis, leaves, expenses, salaries] = await Promise.all([
+        const [summary, leaves, expenses, salaries] = await Promise.all([
           ApiService.getDashboardSummary(),
-          ApiService.getKPIs(),
           ApiService.getLeaves(),
           ApiService.getExpenses(),
           ApiService.getSalaries()
@@ -71,12 +71,12 @@ const AdminDashboard = () => {
           { title: 'Chi Phí Tháng Này', value: formatCurrency(summary.expenses.total), icon: DollarSign, color: 'bg-green-500', change: `${formatCurrency(summary.expenses.approved)} đã duyệt` },
           { title: 'Lương Đã Thanh Toán', value: summary.salary.total ? `${Math.round((summary.salary.paid / summary.salary.total) * 100)}%` : '0%', icon: CheckCircle, color: 'bg-purple-500', change: `${summary.salary.paid}/${summary.salary.total}` }
         ]);
-        const scores = kpis.map((kpi) => Number(kpi.target) > 0 ? Number(kpi.actual) / Number(kpi.target) * 100 : 0);
         setKpiSummary({
-          overallPercentage: scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0,
-          completedCount: kpis.filter((kpi) => Number(kpi.actual) >= Number(kpi.target)).length,
-          totalEmployees: new Set(kpis.map((kpi) => kpi.employee_id)).size,
-          trend: 'Theo dữ liệu KPI hiện tại'
+          overallPercentage: Number(summary.kpi?.overallPercentage || 0),
+          completedCount: Number(summary.kpi?.completedCount || 0),
+          totalCount: Number(summary.kpi?.totalCount || 0),
+          totalEmployees: Number(summary.kpi?.totalEmployees || 0),
+          month: summary.kpi?.month || null
         });
       } catch (error) {
         console.error('Không thể tải dữ liệu dashboard:', error);
@@ -278,7 +278,9 @@ const AdminDashboard = () => {
                 <div>
                   <p className="text-gray-600 text-sm font-medium">Hiệu suất chung</p>
                   <p className="text-4xl font-bold text-blue-600 mt-3">{kpiSummary.overallPercentage}%</p>
-                  <p className="text-green-600 text-xs font-semibold mt-2">{kpiSummary.trend} so với quý trước</p>
+                  <p className="text-gray-600 text-xs font-medium mt-2">
+                    {kpiSummary.month ? `Dữ liệu tháng ${kpiSummary.month}` : 'Chưa có dữ liệu KPI'}
+                  </p>
                 </div>
                 <TrendingUp className="w-14 h-14 text-blue-300" />
               </div>
@@ -287,8 +289,8 @@ const AdminDashboard = () => {
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl shadow-lg p-6 border border-green-100 hover:shadow-xl transition-all duration-300 kpi-card-enter" style={{animationDelay: '0.3s'}}>
               <div>
                 <p className="text-gray-600 text-sm font-medium">Chỉ tiêu hoàn thành</p>
-                <p className="text-4xl font-bold text-green-600 mt-3">{kpiSummary.completedCount}/{kpiSummary.totalEmployees}</p>
-                <p className="text-gray-600 text-xs font-medium mt-2">Nhân viên đạt/vượt mục tiêu</p>
+                <p className="text-4xl font-bold text-green-600 mt-3">{kpiSummary.completedCount}/{kpiSummary.totalCount}</p>
+                <p className="text-gray-600 text-xs font-medium mt-2">Chỉ tiêu đạt/vượt mục tiêu</p>
               </div>
               <Award className="w-14 h-14 text-green-300 absolute right-6 top-6 opacity-50" />
             </div>

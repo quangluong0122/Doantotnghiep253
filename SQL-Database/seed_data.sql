@@ -13,6 +13,10 @@ USE employee_management_db;
 -- emp123 = $2a$10$oR8lp3RvjrQXnr4j6jdJq.giSS1l6b5JJ2MD94iORHWChjN1x1MXW
 -- Pass123! = $2a$10$K5ZWx6qKJPDd6.HgPf8dF.J8qKF5VjzKLVJmrRCvKIQ8FEQk5gWEC
 
+-- MySQL Workbench Safe Update Mode rejects DELETE statements without a key
+-- predicate. This seed intentionally replaces all sample data.
+SET SQL_SAFE_UPDATES = 0;
+SET FOREIGN_KEY_CHECKS = 0;
 DELETE FROM work_history;
 DELETE FROM tasks;
 DELETE FROM kpis;
@@ -22,6 +26,8 @@ DELETE FROM expenses;
 DELETE FROM leaves;
 DELETE FROM employees;
 DELETE FROM users;
+SET FOREIGN_KEY_CHECKS = 1;
+SET SQL_SAFE_UPDATES = 1;
 
 -- Insert Admin User
 INSERT INTO users (username, password_hash, name, email, role, created_at, updated_at) 

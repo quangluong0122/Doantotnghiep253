@@ -76,7 +76,7 @@ const attendanceStatusNames = {
 
 const classifyIntent = (query) => {
   const intents = [
-    { name: 'profile', terms: ['thong tin ca nhan', 'ho so', 'profile', 'toi la ai'] },
+    { name: 'profile', terms: ['thong tin ca nhan', 'thong tin cua toi', 'ho so', 'ho ten', 'profile', 'toi la ai'] },
     { name: 'salary', terms: ['luong cua toi', 'luong thang', 'bang luong', 'thu nhap'] },
     { name: 'attendance', terms: ['cham cong cua toi', 'lich su cham cong', 'di lam', 'gio vao', 'gio ra'] },
     { name: 'leave-history', terms: ['lich su nghi', 'cac don nghi', 'don nghi gan day'] },
@@ -84,7 +84,7 @@ const classifyIntent = (query) => {
     { name: 'performance', terms: ['hieu suat cua toi', 'ket qua hieu suat', 'thong ke hieu suat', 'kpi cua toi'] },
     { name: 'tasks', terms: ['nhiem vu cua toi', 'cong viec cua toi', 'task cua toi', 'lich su nhiem vu'] },
     { name: 'kpi-policy', terms: ['quy dinh kpi', 'chinh sach kpi', 'danh gia hieu suat', 'chi tieu'] },
-    { name: 'policy', terms: ['phuc loi', 'bao hiem', 'quy trinh', 'dong phuc', 'gio lam'] },
+    { name: 'policy', terms: ['phuc loi', 'che do phuc loi', 'bao hiem', 'quy trinh', 'quy trinh nghi phep', 'dong phuc', 'trang phuc', 'loai phep', 'gio lam'] },
   ];
   const matches = intents.filter((intent) => intent.terms.some((term) => query.includes(term)));
   return matches.length === 1 ? matches[0].name : matches.length > 1 ? 'ambiguous' : 'unknown';
@@ -279,7 +279,8 @@ router.post('/message', verifyToken, rateLimit({
     if (matchedFaq) return res.json({ reply: matchedFaq.answer, intent });
 
     return res.json({
-      reply: 'Mình có thể hỗ trợ: thông tin hồ sơ cá nhân, bảng lương, lịch sử chấm công, lịch sử nghỉ phép, số ngày phép còn lại, trạng thái đơn nghỉ phép (ví dụ LV-12), KPI, chế độ phúc lợi, quy trình nghỉ phép, giờ làm việc và quy định về trang phục.'
+      reply: 'Mình chưa đủ thông tin để trả lời chính xác câu hỏi này. Bạn có thể hỏi cụ thể về: hồ sơ cá nhân, bảng lương, lịch sử chấm công, lịch sử nghỉ phép, số ngày phép, trạng thái đơn nghỉ phép (ví dụ LV-12), nhiệm vụ, chính sách nội bộ hoặc thống kê KPI đã ghi nhận.',
+      intent
     });
   } catch (error) {
     return res.status(500).json({ message: 'Không thể xử lý câu hỏi lúc này.' });

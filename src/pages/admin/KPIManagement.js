@@ -95,18 +95,14 @@ const KPIManagement = () => {
     }
   };
 
-  const getPrediction = () => {
+  const getRecordedSummary = () => {
     const scores = history
       .map((row) => Number(row.target) ? (Number(row.actual || 0) / Number(row.target)) * 100 : 0)
       .filter((score) => Number.isFinite(score));
     if (!scores.length) return null;
     const average = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-    const recent = scores[scores.length - 1];
-    const previous = scores.length > 1 ? scores[scores.length - 2] : recent;
-    const trend = recent - previous;
-    const prediction = Math.max(0, Math.min(150, recent + trend * 0.5));
-    const outlook = prediction >= 100 ? 'có khả năng đạt hoặc vượt mục tiêu' : 'cần được hỗ trợ để đạt mục tiêu';
-    return { average, prediction, trend, outlook };
+    const latest = scores[scores.length - 1];
+    return { average, latest };
   };
 
   const filteredKPIs = kpis.filter(kpi =>
@@ -261,11 +257,11 @@ const KPIManagement = () => {
                   })}</tbody>
                 </table>
               </div>
-              {getPrediction() && <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <h3 className="font-bold text-blue-900">Dự đoán hiệu suất bằng AI nội bộ</h3>
-                <p className="mt-2 text-blue-900">Dựa trên xu hướng các kỳ đã ghi nhận, hiệu suất kỳ tiếp theo dự kiến khoảng <strong>{getPrediction().prediction.toFixed(1)}%</strong>, {getPrediction().outlook}.</p>
-                <p className="mt-1 text-sm text-blue-700">Điểm trung bình lịch sử: {getPrediction().average.toFixed(1)}% · Xu hướng gần nhất: {getPrediction().trend >= 0 ? '+' : ''}{getPrediction().trend.toFixed(1)} điểm.</p>
-                <p className="mt-2 text-xs text-blue-700">Đây là dự đoán tham khảo chạy cục bộ từ dữ liệu KPI, không thay thế đánh giá của quản lý.</p>
+              {getRecordedSummary() && <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
+                <h3 className="font-bold text-blue-900">Tóm tắt dữ liệu KPI đã ghi nhận</h3>
+                <p className="mt-2 text-blue-900">Kỳ gần nhất đạt <strong>{getRecordedSummary().latest.toFixed(1)}%</strong>.</p>
+                <p className="mt-1 text-sm text-blue-700">Điểm trung bình các kỳ đã ghi nhận: {getRecordedSummary().average.toFixed(1)}%.</p>
+                <p className="mt-2 text-xs text-blue-700">Đây là thống kê lịch sử, không phải dự đoán hiệu suất tương lai.</p>
               </div>}
             </>}
             <div className="mt-5 flex justify-end"><button onClick={() => setSelectedKpi(null)} className="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300">Đóng</button></div>
