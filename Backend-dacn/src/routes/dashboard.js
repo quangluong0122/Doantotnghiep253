@@ -25,7 +25,8 @@ router.get('/summary', verifyToken, verifyRole(['admin']), async (req, res) => {
               COUNT(*) AS total_count,
               COUNT(DISTINCT employee_id) AS total_employees
        FROM kpis
-       WHERE period = (SELECT MAX(period) FROM kpis)`
+       WHERE period = (SELECT MAX(period) FROM kpis)
+       GROUP BY period`
     );
     res.json({
       employees: { total: Number(employees.total || 0), active: Number(employees.active || 0) },
@@ -41,6 +42,7 @@ router.get('/summary', verifyToken, verifyRole(['admin']), async (req, res) => {
       },
     });
   } catch (error) {
+    console.error('Dashboard summary query failed:', error.message);
     res.status(500).json({ message: 'Không thể tải tổng quan dashboard.' });
   } finally {
     if (connection) connection.release();

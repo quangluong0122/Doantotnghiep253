@@ -23,9 +23,12 @@ const callGemini = async (contents, generationConfig = {}) => {
   const { apiKey, model } = getConfig();
   if (!apiKey) return null;
 
-  const response = await fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const response = await fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': apiKey,
+    },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: contents }] }],
       generationConfig: {
@@ -70,7 +73,11 @@ Ràng buộc: predictedScore từ 0 đến 200; confidence từ 0 đến 1; fact
 
 LỊCH SỬ KPI:
 ${JSON.stringify(history)}`;
-  const text = await callGemini(prompt, { temperature: 0.1, maxOutputTokens: 500 });
+  const text = await callGemini(prompt, {
+    temperature: 0.1,
+    maxOutputTokens: 500,
+    responseMimeType: 'application/json',
+  });
   if (!text) return null;
   const jsonText = text.replace(/^```(?:json)?\s*|\s*```$/gi, '').trim();
   const parsed = JSON.parse(jsonText);
