@@ -288,7 +288,7 @@ router.post('/message', verifyToken, rateLimit({
         reply: geminiReply,
         intent: intent === 'unknown' ? 'ai-assistant' : intent,
         provider: 'google-gemini',
-        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+        model: process.env.GEMINI_MODEL?.trim() || 'gemini-3.8-flash',
       });
     }
 

@@ -132,7 +132,7 @@ router.get('/employee/:employeeId/prediction', verifyToken, verifyRole(['admin']
         basedOn: rows,
         prediction,
         provider: 'google-gemini',
-        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+        model: process.env.GEMINI_MODEL?.trim() || 'gemini-3.8-flash',
       });
     } catch (error) {
       console.error('Gemini performance prediction failed:', error.message);
