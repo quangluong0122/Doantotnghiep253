@@ -2,9 +2,17 @@ const DEFAULT_MODEL = 'gemini-2.5-flash';
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
 
 const getConfig = () => ({
-  apiKey: process.env.GEMINI_API_KEY,
-  model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
+  apiKey: process.env.GEMINI_API_KEY?.trim(),
+  model: process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL,
 });
+
+export const getGeminiStatus = () => {
+  const { apiKey, model } = getConfig();
+  return {
+    configured: Boolean(apiKey),
+    model,
+  };
+};
 
 const extractText = (data) => data?.candidates?.[0]?.content?.parts
   ?.map((part) => part.text || '')
@@ -64,7 +72,8 @@ LỊCH SỬ KPI:
 ${JSON.stringify(history)}`;
   const text = await callGemini(prompt, { temperature: 0.1, maxOutputTokens: 500 });
   if (!text) return null;
-  const parsed = JSON.parse(text.replace(/^```json\s*|\s*```$/g, '').trim());
+  const jsonText = text.replace(/^```(?:json)?\s*|\s*```$/gi, '').trim();
+  const parsed = JSON.parse(jsonText);
   return {
     predictedScore: Math.max(0, Math.min(200, Number(parsed.predictedScore))),
     confidence: Math.max(0, Math.min(1, Number(parsed.confidence))),

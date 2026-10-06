@@ -4,7 +4,7 @@ import ApiService from '../services/ApiService';
 import { useAuth } from '../context/AuthContext';
 
 const ChatbotSupport = () => {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [messages, setMessages] = useState([
     { from: 'bot', text: 'Xin chào! Tôi là Chatbot Hỗ trợ. Tôi có thể tra cứu chính sách nội bộ, dữ liệu cá nhân và thống kê hiệu suất đã ghi nhận (không dự đoán).', time: new Date() }
   ]);
@@ -12,20 +12,23 @@ const ChatbotSupport = () => {
   const [loadingReply, setLoadingReply] = useState(false);
   const chatRef = useRef(null);
 
-  const sampleQuestions = [
+  const employeeQuestions = [
     'Thông tin cá nhân của tôi',
     'Lương của tôi',
     'Lịch sử chấm công của tôi',
     'Các đơn nghỉ gần đây',
-    'Quy trình nghỉ phép',
     'Số ngày phép còn lại',
     'Trạng thái đơn LV-1001',
     'Nhiệm vụ của tôi',
     'Thống kê hiệu suất của tôi',
+  ];
+  const sampleQuestions = [
     'Chế độ phúc lợi',
     'Quy định về trang phục',
     'Các loại phép hiện có',
-    'Quy định về KPI'
+    'Quy trình nghỉ phép',
+    'Quy định về KPI',
+    ...(user?.role === 'admin' ? ['Chính sách bảo mật tài khoản'] : employeeQuestions)
   ];
 
   const pushMessage = (msg) => {
@@ -75,7 +78,7 @@ const ChatbotSupport = () => {
     <Layout>
       <div className="max-w-5xl mx-auto h-screen flex flex-col">
         <h1 className="text-2xl font-bold mb-2">Chatbot Hỗ trợ</h1>
-        <p className="text-sm text-gray-600 mb-3">Hỗ trợ 24/7 về chính sách nhân sự, quy trình nghỉ phép, kiểm tra số ngày phép và tra cứu trạng thái đơn.</p>
+        <p className="text-sm text-gray-600 mb-3">Hỗ trợ về chính sách nhân sự và dữ liệu phù hợp với vai trò tài khoản đang đăng nhập.</p>
 
         <div className="bg-white rounded-lg shadow p-4 flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 overflow-hidden">
           {/* Suggestions panel */}

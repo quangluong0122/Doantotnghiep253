@@ -297,6 +297,7 @@ router.post('/message', verifyToken, rateLimit({
       intent
     });
   } catch (error) {
+    console.error('Chatbot processing failed:', error.message);
     return res.status(500).json({ message: 'Không thể xử lý câu hỏi lúc này.' });
   } finally {
     if (connection) connection.release();

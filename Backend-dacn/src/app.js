@@ -12,6 +12,7 @@ import chatbotRouter from './routes/chatbot.js';
 import performanceRouter from './routes/performance.js';
 import dashboardRouter from './routes/dashboard.js';
 import tasksRouter from './routes/tasks.js';
+import { getGeminiStatus } from './services/gemini.js';
 
 dotenv.config();
 
@@ -68,6 +69,10 @@ app.get('/', (req, res) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'API is running' });
+});
+
+app.get('/api/health/gemini', (req, res) => {
+  res.json(getGeminiStatus());
 });
 
 export default app;
