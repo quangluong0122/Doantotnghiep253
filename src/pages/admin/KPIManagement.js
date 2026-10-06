@@ -7,6 +7,7 @@ const KPIManagement = () => {
   const [kpis, setKpis] = useState([]);
   const [selectedKpi, setSelectedKpi] = useState(null);
   const [history, setHistory] = useState([]);
+  const [prediction, setPrediction] = useState(null);
   const [employees, setEmployees] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState({ employee_id: '', metric: '', target: '', actual: '', period: '' });
@@ -85,11 +86,17 @@ const KPIManagement = () => {
     try {
       setSelectedKpi(kpi);
       setDetailLoading(true);
-      setHistory(await ApiService.getKpiDetails(kpi.employee_id));
+      const [details, predictionResult] = await Promise.all([
+        ApiService.getKpiDetails(kpi.employee_id),
+        ApiService.getPerformancePrediction(kpi.employee_id).catch(() => null),
+      ]);
+      setHistory(details);
+      setPrediction(predictionResult?.prediction || null);
       setError('');
     } catch (detailError) {
       setError(detailError.message || 'Không thể tải chi tiết KPI');
       setSelectedKpi(null);
+      setPrediction(null);
     } finally {
       setDetailLoading(false);
     }
@@ -258,10 +265,14 @@ const KPIManagement = () => {
                 </table>
               </div>
               {getRecordedSummary() && <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <h3 className="font-bold text-blue-900">Tóm tắt dữ liệu KPI đã ghi nhận</h3>
-                <p className="mt-2 text-blue-900">Kỳ gần nhất đạt <strong>{getRecordedSummary().latest.toFixed(1)}%</strong>.</p>
-                <p className="mt-1 text-sm text-blue-700">Điểm trung bình các kỳ đã ghi nhận: {getRecordedSummary().average.toFixed(1)}%.</p>
-                <p className="mt-2 text-xs text-blue-700">Đây là thống kê lịch sử, không phải dự đoán hiệu suất tương lai.</p>
+                <h3 className="font-bold text-blue-900">Dự đoán hiệu suất tương lai bằng Gemini Flash</h3>
+                {prediction ? <>
+                  <p className="mt-2 text-blue-900">Kỳ tiếp theo dự kiến đạt <strong>{prediction.predictedScore.toFixed(1)}%</strong>.</p>
+                  <p className="mt-1 text-sm text-blue-700">Xu hướng: {prediction.trend} · Độ tin cậy: {(prediction.confidence * 100).toFixed(0)}%</p>
+                  <p className="mt-1 text-sm text-blue-700">{prediction.explanation}</p>
+                  {prediction.factors?.length > 0 && <p className="mt-1 text-sm text-blue-700">Yếu tố: {prediction.factors.join('; ')}</p>}
+                </> : <p className="mt-2 text-sm text-blue-700">Chưa có dự đoán. Hãy cấu hình GEMINI_API_KEY ở backend và thử lại.</p>}
+                <p className="mt-2 text-xs text-blue-700">Dự đoán chỉ mang tính tham khảo, dựa trên dữ liệu KPI đã ghi nhận.</p>
               </div>}
             </>}
             <div className="mt-5 flex justify-end"><button onClick={() => setSelectedKpi(null)} className="rounded-lg bg-gray-200 px-4 py-2 hover:bg-gray-300">Đóng</button></div>

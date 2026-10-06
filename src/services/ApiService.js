@@ -111,6 +111,13 @@ const ApiService = {
     return parseResponse(response, 'Không thể tải hiệu suất');
   },
 
+  getPerformancePrediction: async (employeeId) => {
+    const response = await fetch(`${API_BASE_URL}/performance/employee/${employeeId}/prediction`, {
+      headers: ApiService.getAuthHeader(),
+    });
+    return parseResponse(response, 'Không thể dự đoán hiệu suất');
+  },
+
   getTasks: async () => {
     const response = await fetch(`${API_BASE_URL}/tasks`, { headers: ApiService.getAuthHeader() });
     return parseResponse(response, 'Không thể tải lịch sử nhiệm vụ');

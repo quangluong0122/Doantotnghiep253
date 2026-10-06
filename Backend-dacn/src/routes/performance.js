@@ -1,6 +1,8 @@
 import express from 'express';
 import pool from '../config/database.js';
 import { verifyToken, verifyRole } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
+import { predictPerformance } from '../services/gemini.js';
 
 const router = express.Router();
 const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -98,6 +100,44 @@ router.get('/employee/:employeeId', verifyToken, async (req, res) => {
     res.json({ employeeId: rows[0]?.employee_id || null, history });
   } catch (error) {
     res.status(500).json({ message: 'Không thể tính hiệu suất nhân viên.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+router.get('/employee/:employeeId/prediction', verifyToken, verifyRole(['admin']), rateLimit({
+  windowMs: 60_000,
+  max: 10,
+  key: (req) => `prediction:${req.user.id}`,
+}), async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.execute(
+      `SELECT period AS month, metric, target, actual,
+              ROUND((actual / NULLIF(target, 0)) * 100, 2) AS score
+       FROM kpis WHERE employee_id = ? ORDER BY period ASC, id ASC`,
+      [req.params.employeeId]
+    );
+    if (!rows.length) return res.status(404).json({ message: 'Chưa có dữ liệu KPI để dự đoán.' });
+    if (!process.env.GEMINI_API_KEY) {
+      return res.status(503).json({ message: 'Gemini chưa được cấu hình trên máy chủ.' });
+    }
+    try {
+      const prediction = await predictPerformance(rows);
+      if (!prediction) return res.status(503).json({ message: 'Gemini chưa trả về kết quả dự đoán.' });
+      return res.json({
+        employeeId: Number(req.params.employeeId),
+        basedOn: rows,
+        prediction,
+        provider: 'google-gemini',
+        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      });
+    } catch (error) {
+      return res.status(502).json({ message: 'Không thể nhận dự đoán từ Gemini.', detail: error.message });
+    }
+  } catch (error) {
+    return res.status(500).json({ message: 'Không thể tạo dự đoán hiệu suất.' });
   } finally {
     if (connection) connection.release();
   }

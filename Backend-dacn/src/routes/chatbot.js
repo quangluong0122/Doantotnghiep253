@@ -3,6 +3,7 @@ import pool from '../config/database.js';
 import { verifyToken } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { searchHrDocuments } from '../knowledgeBase/hrDocuments.js';
+import { askGemini } from '../services/gemini.js';
 
 const router = express.Router();
 
@@ -278,8 +279,21 @@ router.post('/message', verifyToken, rateLimit({
     const matchedFaq = faq.find((item) => item.keywords.some((keyword) => query.includes(normalize(keyword))));
     if (matchedFaq) return res.json({ reply: matchedFaq.answer, intent });
 
+    const geminiReply = await askGemini({
+      question: text,
+      documents: searchHrDocuments(query),
+    });
+    if (geminiReply) {
+      return res.json({
+        reply: geminiReply,
+        intent: intent === 'unknown' ? 'ai-assistant' : intent,
+        provider: 'google-gemini',
+        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      });
+    }
+
     return res.json({
-      reply: 'Mình chưa đủ thông tin để trả lời chính xác câu hỏi này. Bạn có thể hỏi cụ thể về: hồ sơ cá nhân, bảng lương, lịch sử chấm công, lịch sử nghỉ phép, số ngày phép, trạng thái đơn nghỉ phép (ví dụ LV-12), nhiệm vụ, chính sách nội bộ hoặc thống kê KPI đã ghi nhận.',
+      reply: 'Gemini chưa được cấu hình ở máy chủ. Mình chưa đủ thông tin để trả lời chính xác câu hỏi này. Bạn có thể hỏi cụ thể về: hồ sơ cá nhân, bảng lương, lịch sử chấm công, lịch sử nghỉ phép, số ngày phép, trạng thái đơn nghỉ phép (ví dụ LV-12), nhiệm vụ, chính sách nội bộ hoặc thống kê KPI đã ghi nhận.',
       intent
     });
   } catch (error) {
