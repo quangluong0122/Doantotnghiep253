@@ -2,7 +2,7 @@ import express from 'express';
 import pool from '../config/database.js';
 import { verifyToken, verifyRole } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
-import { predictPerformance } from '../services/gemini.js';
+import { getGeminiStatus, predictPerformance } from '../services/gemini.js';
 
 const router = express.Router();
 const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -120,7 +120,8 @@ router.get('/employee/:employeeId/prediction', verifyToken, verifyRole(['admin']
       [req.params.employeeId]
     );
     if (!rows.length) return res.status(404).json({ message: 'Chưa có dữ liệu KPI để dự đoán.' });
-    if (!process.env.GEMINI_API_KEY) {
+    const geminiStatus = getGeminiStatus();
+    if (!geminiStatus.configured) {
       return res.status(503).json({ message: 'Gemini chưa được cấu hình trên máy chủ.' });
     }
     try {
@@ -134,7 +135,11 @@ router.get('/employee/:employeeId/prediction', verifyToken, verifyRole(['admin']
         model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
       });
     } catch (error) {
-      return res.status(502).json({ message: 'Không thể nhận dự đoán từ Gemini.', detail: error.message });
+      console.error('Gemini performance prediction failed:', error.message);
+      return res.status(502).json({
+        message: 'Gemini không trả được dự đoán. Kiểm tra GEMINI_API_KEY, GEMINI_MODEL và quota trong log backend.',
+        code: 'GEMINI_API_ERROR',
+      });
     }
   } catch (error) {
     return res.status(500).json({ message: 'Không thể tạo dự đoán hiệu suất.' });

@@ -8,6 +8,7 @@ const KPIManagement = () => {
   const [selectedKpi, setSelectedKpi] = useState(null);
   const [history, setHistory] = useState([]);
   const [prediction, setPrediction] = useState(null);
+  const [predictionError, setPredictionError] = useState('');
   const [employees, setEmployees] = useState([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [createForm, setCreateForm] = useState({ employee_id: '', metric: '', target: '', actual: '', period: '' });
@@ -88,15 +89,19 @@ const KPIManagement = () => {
       setDetailLoading(true);
       const [details, predictionResult] = await Promise.all([
         ApiService.getKpiDetails(kpi.employee_id),
-        ApiService.getPerformancePrediction(kpi.employee_id).catch(() => null),
+        ApiService.getPerformancePrediction(kpi.employee_id).catch((predictionRequestError) => ({
+          error: predictionRequestError.message || 'Không thể tải dự đoán Gemini.',
+        })),
       ]);
       setHistory(details);
       setPrediction(predictionResult?.prediction || null);
+      setPredictionError(predictionResult?.error || '');
       setError('');
     } catch (detailError) {
       setError(detailError.message || 'Không thể tải chi tiết KPI');
       setSelectedKpi(null);
       setPrediction(null);
+      setPredictionError('');
     } finally {
       setDetailLoading(false);
     }
@@ -271,7 +276,7 @@ const KPIManagement = () => {
                   <p className="mt-1 text-sm text-blue-700">Xu hướng: {prediction.trend} · Độ tin cậy: {(prediction.confidence * 100).toFixed(0)}%</p>
                   <p className="mt-1 text-sm text-blue-700">{prediction.explanation}</p>
                   {prediction.factors?.length > 0 && <p className="mt-1 text-sm text-blue-700">Yếu tố: {prediction.factors.join('; ')}</p>}
-                </> : <p className="mt-2 text-sm text-blue-700">Chưa có dự đoán. Hãy cấu hình GEMINI_API_KEY ở backend và thử lại.</p>}
+                </> : <p className="mt-2 text-sm text-blue-700">{predictionError || 'Chưa có dự đoán từ Gemini.'}</p>}
                 <p className="mt-2 text-xs text-blue-700">Dự đoán chỉ mang tính tham khảo, dựa trên dữ liệu KPI đã ghi nhận.</p>
               </div>}
             </>}
