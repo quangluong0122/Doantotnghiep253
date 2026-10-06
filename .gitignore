@@ -7,6 +7,7 @@
 
 # testing
 /coverage
+Backend-dacn/.test-mysql/
 
 # production
 # /build - COMMENTED OUT: Build folder is committed for Railway deployment

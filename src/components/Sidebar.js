@@ -22,14 +22,8 @@ const Sidebar = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(true);
 
-  // Get avatar from localStorage
-  const [selectedAvatar] = useState(() => {
-    const saved = localStorage.getItem(`userAvatar_${user?.username}`);
-    return saved ? parseInt(saved) : 0;
-  });
-  const [customAvatarUrl] = useState(() => {
-    return localStorage.getItem(`customAvatarUrl_${user?.username}`) || null;
-  });
+  const [selectedAvatar] = useState(0);
+  const [customAvatarUrl] = useState(null);
 
   const avatarOptions = Array.from({ length: 30 }, (_, i) => 
     `https://i.pravatar.cc/150?img=${i}`

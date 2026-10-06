@@ -15,25 +15,14 @@ const AccountManagement = () => {
     newPassword: '',
     confirmPassword: ''
   });
-  const [selectedAvatar, setSelectedAvatar] = useState(() => {
-    const saved = localStorage.getItem(`userAvatar_${user?.username}`);
-    return saved ? parseInt(saved) : 0;
-  });
-  const [customAvatarUrl, setCustomAvatarUrl] = useState(() => {
-    return localStorage.getItem(`customAvatarUrl_${user?.username}`) || null;
-  });
-  const [formData, setFormData] = useState(() => {
-    const saved = localStorage.getItem(`userData_${user?.username}`);
-    if (saved) {
-      return JSON.parse(saved);
-    }
-    return {
-      name: user?.name || '',
-      email: user?.email || '',
-      phone: user?.phone || '',
-      username: user?.username || '',
-      role: user?.role || '',
-    };
+  const [selectedAvatar, setSelectedAvatar] = useState(0);
+  const [customAvatarUrl, setCustomAvatarUrl] = useState(null);
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    username: user?.username || '',
+    role: user?.role || '',
   });
   const [showAvatarGrid, setShowAvatarGrid] = useState(false);
 
@@ -50,8 +39,6 @@ const AccountManagement = () => {
   };
 
   const handleSave = () => {
-    console.log('Saving:', formData);
-    localStorage.setItem(`userData_${user?.username}`, JSON.stringify(formData));
     setIsEditing(false);
     setSuccessMessage('✅ Thông tin đã được cập nhật thành công!');
     setTimeout(() => setSuccessMessage(''), 3000);
@@ -60,8 +47,6 @@ const AccountManagement = () => {
   const handleAvatarSelect = (idx) => {
     setSelectedAvatar(idx);
     setCustomAvatarUrl(null);
-    localStorage.setItem(`userAvatar_${user?.username}`, idx.toString());
-    localStorage.removeItem(`customAvatarUrl_${user?.username}`);
     setShowAvatarModal(false);
   };
 
@@ -72,10 +57,7 @@ const AccountManagement = () => {
       reader.onloadend = () => {
         const base64Url = reader.result;
         setCustomAvatarUrl(base64Url);
-        localStorage.setItem(`customAvatarUrl_${user?.username}`, base64Url);
-        localStorage.setItem(`userAvatar_${user?.username}`, '-1');
         setShowAvatarModal(false);
-        console.log('✅ Custom avatar uploaded');
       };
       reader.readAsDataURL(file);
     }

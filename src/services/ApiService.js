@@ -5,6 +5,8 @@ const defaultApiUrl = process.env.NODE_ENV === 'production'
 const configuredApiUrl = (process.env.REACT_APP_API_URL || defaultApiUrl).replace(/\/$/, '');
 export const API_BASE_URL = configuredApiUrl.endsWith('/api') ? configuredApiUrl : `${configuredApiUrl}/api`;
 
+let authToken = null;
+
 const parseResponse = async (response, fallbackMessage) => {
   const contentType = response.headers.get('content-type') || '';
   const body = await response.text();
@@ -61,7 +63,9 @@ const ApiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     });
-    return parseResponse(response, 'Đăng nhập thất bại');
+    const data = await parseResponse(response, 'Đăng nhập thất bại');
+    authToken = data.token;
+    return data;
   },
 
   register: async (username, password, name, role) => {
@@ -73,10 +77,27 @@ const ApiService = {
     return parseResponse(response, 'Đăng ký thất bại');
   },
 
+  logout: async () => {
+    if (!authToken) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+        method: 'POST',
+        headers: ApiService.getAuthHeader(),
+      });
+      if (!response.ok && response.status !== 401) {
+        throw new Error(`Đăng xuất thất bại (HTTP ${response.status})`);
+      }
+    } finally {
+      authToken = null;
+    }
+  },
+
   // Helper function to get auth header
   getAuthHeader: () => {
-    const token = localStorage.getItem('token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return authToken ? { Authorization: `Bearer ${authToken}` } : {};
   },
 
   // Employees

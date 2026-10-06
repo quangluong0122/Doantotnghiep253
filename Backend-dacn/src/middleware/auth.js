@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { isTokenRevoked } from './tokenRevocation.js';
 
 export const verifyToken = (req, res, next) => {
   const authorization = req.get('authorization') || '';
@@ -16,6 +17,9 @@ export const verifyToken = (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, secret);
+    if (!decoded.jti || isTokenRevoked(decoded.jti)) {
+      return res.status(401).json({ message: 'Token has been revoked' });
+    }
     req.user = decoded;
     next();
   } catch (err) {

@@ -1,7 +1,10 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'node:crypto';
 import pool from '../config/database.js';
+import { verifyToken } from '../middleware/auth.js';
+import { revokeToken } from '../middleware/tokenRevocation.js';
 
 const router = express.Router();
 
@@ -37,9 +40,9 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, username: user.username, role: user.role },
+      { id: user.id, username: user.username, role: user.role, jti: randomUUID() },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '2h' }
     );
 
     res.json({
@@ -57,9 +60,15 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// Logout and invalidate the current access token on the server.
+router.post('/logout', verifyToken, (req, res) => {
+  revokeToken(req.user.jti, req.user.exp);
+  res.status(204).send();
+});
+
 // Register
 router.post('/register', async (req, res) => {
-  const { username, password, fullName, email, role } = req.body;
+  const { username, password, fullName, email } = req.body;
 
   // Validation
   if (!username || !password || !fullName || !email) {
@@ -89,7 +98,7 @@ router.post('/register', async (req, res) => {
       const hashedPassword = await bcrypt.hash(password, 10);
       const [userResult] = await connection.execute(
         'INSERT INTO users (username, password_hash, name, email, role) VALUES (?, ?, ?, ?, ?)',
-        [username.trim(), hashedPassword, fullName.trim(), email.trim().toLowerCase(), role || 'employee']
+        [username.trim(), hashedPassword, fullName.trim(), email.trim().toLowerCase(), 'employee']
       );
 
       const nameParts = fullName.trim().split(/\s+/);

@@ -1,0 +1,162 @@
+\section{Kiểm thử phần mềm}
+\label{sec:software-testing}
+
+\subsection{Phạm vi và công cụ}
+Hệ thống được kiểm thử theo ba lớp: Unit test, HTTP integration test và Database integration test. Frontend sử dụng Jest, React Testing Library; backend sử dụng Node.js test runner và Supertest. Database integration test dùng MySQL qua pool hiện có của backend.
+
+\begin{table}[h!]
+\centering
+\caption{Cấu trúc bộ kiểm thử}
+\label{tab:test-structure}
+\begin{tabular}{p{0.36\textwidth}p{0.36\textwidth}p{0.12\textwidth}}
+\hline
+\textbf{File} & \textbf{Phạm vi} & \textbf{Số test} \\
+\hline
+\texttt{src/services/ApiService.test.js} & Payload, header và lỗi khi tạo KPI & 2 \\
+\texttt{src/pages/employee/EmployeeKPI.test.js} & Render, tiến độ và lỗi API KPI & 2 \\
+\texttt{Backend-dacn/test/api.test.js} & Middleware, health, HTTP validation và phân quyền & 8 \\
+\texttt{Backend-dacn/test/database.integration.test.js} & MySQL, KPI, chi phí, chấm công và workflow ghi dữ liệu & 6 \\
+\hline
+\textbf{Tổng cộng} & & \textbf{18} \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{7.2 Test case frontend}
+\label{subsec:test-case-frontend}
+\begin{table}[h!]
+\centering
+\caption{Các test case frontend}
+\label{tab:frontend-test-cases}
+\begin{tabular}{p{0.12\textwidth}p{0.39\textwidth}p{0.28\textwidth}p{0.10\textwidth}}
+\hline
+\textbf{ID} & \textbf{Kịch bản} & \textbf{Kết quả mong đợi} & \textbf{Kết quả} \\
+\hline
+FE-01 & Tạo KPI với payload hợp lệ & Gửi POST đúng payload, header Bearer và nhận id & Đạt \\
+FE-02 & API tạo KPI trả lỗi & Promise reject với message từ server & Đạt \\
+FE-03 & EmployeeKPI tải dữ liệu & Hiển thị chỉ tiêu và phần trăm hoàn thành & Đạt \\
+FE-04 & EmployeeKPI tải thất bại & Không crash, danh sách rỗng & Đạt \\
+FE-05 & Lọc KPI theo từ khóa & Chỉ hiển thị dòng phù hợp & Chưa bổ sung \\
+FE-06 & Phân trang KPI & Chuyển trang đúng dữ liệu & Chưa bổ sung \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{7.3 Test case backend}
+\label{subsec:test-case-backend}
+Kiểm thử backend gồm unit test cho middleware, HTTP integration test cho các endpoint không cần truy vấn dữ liệu và database integration test với MySQL test instance.
+\begin{table}[h!]
+\centering
+\caption{Unit và HTTP integration test}
+\label{tab:backend-http-cases}
+\begin{tabular}{p{0.13\textwidth}p{0.39\textwidth}p{0.28\textwidth}p{0.10\textwidth}}
+\hline
+\textbf{ID} & \textbf{Kịch bản} & \textbf{Kết quả mong đợi} & \textbf{Kết quả} \\
+\hline
+BE-01 & Thiếu Bearer token & HTTP 401, No token provided & Đạt \\
+BE-02 & Token JWT hợp lệ & Giải mã và gắn user vào request & Đạt \\
+BE-03 & Employee gọi middleware admin & HTTP 403, Forbidden & Đạt \\
+BE-04 & GET /api/health & HTTP 200 và JSON status & Đạt \\
+BE-05 & GET /api/kpi không token & HTTP 401 & Đạt \\
+BE-06 & Tạo KPI với dữ liệu rỗng/sai & HTTP 400 trước database & Đạt \\
+BE-07 & Employee tạo KPI & HTTP 403 & Đạt \\
+BE-08 & Summary chi phí sai tháng & HTTP 400 với YYYY-MM không hợp lệ & Đạt \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\caption{Test case backend với MySQL}
+\label{tab:backend-database-cases}
+\begin{tabular}{p{0.13\textwidth}p{0.39\textwidth}p{0.28\textwidth}p{0.10\textwidth}}
+\hline
+    extbf{ID} & \textbf{Kịch bản} & \textbf{Kết quả mong đợi} & \textbf{Kết quả} \\
+\hline
+DB-01 & Kiểm tra kết nối database & SELECT 1 trả về connected=1 & Đạt \\
+DB-02 & Admin đọc danh sách KPI & HTTP 200 và response là mảng & Đạt \\
+DB-03 & Employee đọc chi phí cá nhân & Không trả trường employee\_name của admin & Đạt \\
+DB-04 & Tổng hợp chi phí tháng 01/2026 & total\_amount và approved\_amount là số & Đạt \\
+DB-05 & Đọc thời gian làm việc & Có work\_duration\_minutes và work\_duration & Đạt \\
+DB-06 & Tạo và duyệt đề xuất chi phí & Tạo 201, duyệt 200, cleanup thành công & Đạt \\
+\hline
+\end{tabular}
+\end{table}
+
+    extbf{Kết quả backend:} 8/8 test unit và HTTP integration đạt; 6/6 database integration đạt. Tổng cộng backend đạt 14/14 test case. Dữ liệu tạo trong DB-06 được xóa sau khi kiểm thử.
+
+\subsection{Database integration test}
+Các test database được bật có điều kiện để tránh ghi vào production. Test chỉ chạy đầy đủ khi có \texttt{TEST\_DB=1} và cấu hình \texttt{TEST\_DATABASE\_URL} hoặc bộ biến \texttt{DB\_HOST}, \texttt{DB\_USER}, \texttt{DB\_NAME}. Workflow ghi dữ liệu chỉ chạy thêm khi bật \texttt{TEST\_DB\_WRITE=1}; dữ liệu expense tạo trong test được xóa ở bước cleanup.
+
+\begin{table}[h!]
+\centering
+\caption{Các test case tích hợp với MySQL}
+\label{tab:database-cases}
+\begin{tabular}{p{0.13\textwidth}p{0.39\textwidth}p{0.28\textwidth}p{0.10\textwidth}}
+\hline
+    extbf{ID} & \textbf{Kịch bản} & \textbf{Kết quả mong đợi} & \textbf{Kết quả hiện tại} \\
+\hline
+DB-01 & Kết nối MySQL & SELECT 1 trả connected=1 & Đạt \\
+DB-02 & Admin đọc KPI & HTTP 200, response là mảng & Đạt \\
+DB-03 & Employee đọc expense & Chỉ trả expense của employee & Đạt \\
+DB-04 & Tổng hợp chi phí tháng & total/approved là number & Đạt \\
+DB-05 & Đọc thời gian làm việc & Có work\_duration\_minutes và work\_duration & Đạt \\
+DB-06 & Employee tạo và admin duyệt expense & 201 pending, sau đó 200 approved, cleanup thành công & Đạt \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Lệnh chạy kiểm thử}
+\begin{verbatim}
+# Frontend
+npm run test:ci
+
+# Backend unit + HTTP integration
+cd Backend-dacn
+npm test
+
+# Database integration, PowerShell
+$env:TEST_DB='1'
+$env:TEST_DB_WRITE='1'
+$env:DB_HOST='localhost'
+$env:DB_PORT='3307'
+$env:DB_USER='root'
+$env:DB_PASSWORD='your_password'
+$env:DB_NAME='employee_management_db'
+npm run test:db
+\end{verbatim}
+
+Không đặt thông tin production database vào môi trường test. Nên tạo database riêng, chạy schema và seed trước khi chạy \texttt{test:db}.
+
+\subsection{Kết quả chạy hiện tại}
+\begin{table}[h!]
+\centering
+\caption{Kết quả thực thi trên môi trường hiện tại}
+\label{tab:test-results}
+\begin{tabular}{p{0.36\textwidth}p{0.18\textwidth}p{0.18\textwidth}p{0.16\textwidth}}
+\hline
+    extbf{Nhóm} & \textbf{Tổng} & \textbf{Đạt} & \textbf{Trạng thái} \\
+\hline
+Frontend unit test & 4 & 4 & 100\% \\
+Backend unit/HTTP test & 8 & 8 & 100\% \\
+Database integration test & 6 & 6 & 100\% \\
+\hline
+    extbf{Test đã chạy} & \textbf{18} & \textbf{18} & \textbf{100\%} \\
+\hline
+\end{tabular}
+\end{table}
+
+Frontend coverage hiện tại là 4.22\% statements, 3.47\% branches, 4.25\% functions và 4.15\% lines. Coverage thấp vì mới kiểm thử ApiService và EmployeeKPI; đây là chỉ số đo được, không phải khẳng định coverage toàn hệ thống.
+
+\subsection{Lỗi đã sửa}
+\begin{itemize}
+    \item Tách Express app khỏi \texttt{listen} để Supertest có thể import và kiểm thử.
+    \item Sửa script backend để Node test runner nhận thư mục test trên Windows.
+    \item Thêm \texttt{setupTests.js} cho matcher React Testing Library.
+    \item Sửa assertion KPI bị trùng nhiều phần tử.
+    \item Thêm validation và test cho KPI, summary chi phí và phân quyền.
+    \item Thêm cleanup cho workflow expense integration có ghi dữ liệu.
+\end{itemize}
+
+\subsection{Kết luận}
+Bộ test đã được xây dựng với 18 test case và cả 18 test đều đạt trên MySQL test instance riêng. Database integration test đã kiểm tra kết nối, dữ liệu KPI, chi phí, thời gian làm việc và workflow tạo/duyệt chi phí; dữ liệu ghi thử đã được cleanup. Frontend build và toàn bộ unit/HTTP test hiện có đều đạt.

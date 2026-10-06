@@ -22,10 +22,9 @@ const EmployeeDashboard = () => {
   useEffect(() => {
     const fetchEmployeeData = async () => {
       try {
-        const token = localStorage.getItem('token');
         // Fetch employee profile
         const empRes = await fetch(`${API_BASE_URL}/employees/profile/me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: ApiService.getAuthHeader()
         });
         if (empRes.ok) {
           setEmployee(await empRes.json());
@@ -33,7 +32,7 @@ const EmployeeDashboard = () => {
 
         // Fetch leaves - filter by current employee
         const leavesRes = await fetch(`${API_BASE_URL}/leaves`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: ApiService.getAuthHeader()
         });
         if (leavesRes.ok) {
           const allLeaves = await leavesRes.json();
@@ -48,7 +47,7 @@ const EmployeeDashboard = () => {
 
         // Fetch expenses - filter by current employee
         const expensesRes = await fetch(`${API_BASE_URL}/expenses`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: ApiService.getAuthHeader()
         });
         if (expensesRes.ok) {
           const allExpenses = await expensesRes.json();
@@ -57,7 +56,7 @@ const EmployeeDashboard = () => {
 
         // Fetch salaries - filter by current employee
         const salariesRes = await fetch(`${API_BASE_URL}/salary`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: ApiService.getAuthHeader()
         });
         if (salariesRes.ok) {
           const allSalaries = await salariesRes.json();

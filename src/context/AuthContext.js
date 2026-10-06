@@ -17,12 +17,6 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check if user is logged in (from localStorage)
-    const savedUser = localStorage.getItem('user');
-    const savedToken = localStorage.getItem('token');
-    if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-    }
     setLoading(false);
   }, []);
 
@@ -31,8 +25,6 @@ export const AuthProvider = ({ children }) => {
       const response = await ApiService.login(username, password);
       if (response.success) {
         setUser(response.user);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        localStorage.setItem('token', response.token);
         setError(null);
         return { success: true, user: response.user };
       } else {
@@ -47,11 +39,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-    localStorage.removeItem('token');
-    setError(null);
+  const logout = async () => {
+    try {
+      await ApiService.logout();
+    } finally {
+      setUser(null);
+      setError(null);
+    }
   };
 
   const value = {

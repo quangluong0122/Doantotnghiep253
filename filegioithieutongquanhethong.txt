@@ -1,0 +1,81 @@
+HIỆN THỰC VÀ TRIỂN KHAI HỆ THỐNG
+1. KIẾN TRÚC TỔNG QUAN
+-----------------------
+Hệ thống gồm ba thành phần chính:
+
+- Frontend (FE): ứng dụng React, cung cấp giao diện đăng nhập và các chức năng
+	quản lý nhân viên, chấm công, nghỉ phép, lương, chi phí và KPI.
+- Backend (BE): API Node.js/Express, xử lý xác thực, phân quyền, nghiệp vụ và
+	giao tiếp với cơ sở dữ liệu MySQL.
+- Database (SQL): MySQL, lưu trữ tài khoản người dùng, nhân viên, chấm công,
+	nghỉ phép, lương, chi phí và KPI.
+
+Luồng hoạt động:
+FE -> BE API -> MySQL Database
+
+
+2. TRIỂN KHAI FRONTEND (FE)
+---------------------------
+Nền tảng: Vercel.
+
+Mô tả:
+- Công nghệ: React 18, React Router và Tailwind CSS.
+- Lệnh build: npm run build.
+- Biến môi trường production:
+	REACT_APP_API_URL=https://doantotnghiep253.onrender.com/api
+
+Thiết lập trên Vercel:
+- Project: doantotnghiep253.
+- Root Directory: thư mục gốc của repository.
+- Build Command: npm run build.
+- Output Directory: build.
+- Install Command: npm install.
+- Environment Variable:
+	REACT_APP_API_URL=https://doantotnghiep253.onrender.com/api
+
+Link truy cập FE production:
+- https://doantotnghiep253.vercel.app
+
+3. TRIỂN KHAI BACKEND (BE)
+--------------------------
+Nền tảng: Render Web Service.
+
+Mô tả:
+- Mã nguồn BE nằm tại thư mục Backend-dacn.
+- Công nghệ: Node.js, Express, JWT, bcryptjs và mysql2.
+  
+Thiết lập trên Render:
+- Root Directory: Backend-dacn.
+- Build Command: npm install.
+- Start Command: npm start.
+- Health Check Path: /api/health.
+- Port: dùng biến PORT do Render cung cấp.
+
+Link BE production:
+- https://doantotnghiep253.onrender.com
+- API: https://doantotnghiep253.onrender.com/api
+- Health check: https://doantotnghiep253.onrender.com/api/health
+
+4. TRIỂN KHAI CƠ SỞ DỮ LIỆU SQL
+--------------------------------
+Hệ quản trị: MySQL.
+
+File SQL sử dụng:
+- SQL-Database/employee_management_db.sql: cấu trúc database.
+- SQL-Database/seed_data.sql: dữ liệu mẫu.
+
+
+5. TÀI KHOẢN ĐĂNG NHẬP DEMO
+---------------------------
+
+Tài khoản quản trị:
+- Username: admin
+- Password: admin123
+- Role: admin
+- Quyền: quản lý nhân viên, lương, chi phí, nghỉ phép và KPI.
+
+Tài khoản nhân viên:
+- Username: employee
+- Password: emp123
+- Role: employee
+- Quyền: xem thông tin cá nhân, chấm công, nghỉ phép và KPI của bản thân.
