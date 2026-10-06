@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
+import ApiService from '../../services/ApiService';
 import { Users, Calendar, DollarSign, CheckCircle, TrendingUp, Target, Award, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const AdminDashboard = () => {
-  const stats = [
+  const [stats, setStats] = useState([
     { 
       title: 'Tổng Nhân Viên', 
       value: '15', 
@@ -32,10 +33,60 @@ const AdminDashboard = () => {
       color: 'bg-purple-500',
       change: '13/15 nhân viên'
     },
-  ];
+  ]);
+  const [kpiSummary, setKpiSummary] = useState({
+    overallPercentage: 0,
+    completedCount: 0,
+    totalEmployees: 0,
+    trend: 'Chưa có dữ liệu'
+  });
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        const [summary, kpis, leaves, expenses, salaries] = await Promise.all([
+          ApiService.getDashboardSummary(),
+          ApiService.getKPIs(),
+          ApiService.getLeaves(),
+          ApiService.getExpenses(),
+          ApiService.getSalaries()
+        ]);
+        setLeavesData(leaves.map((leave) => ({
+          ...leave,
+          name: leave.employee_name || '',
+          type: leave.leave_type || '',
+          date: `${leave.start_date} - ${leave.end_date}`
+        })));
+        setExpensesData(expenses);
+        setSalaryData(salaries.map((salary) => ({
+          ...salary,
+          month: salary.month || salary.effective_date,
+          totalSalary: salary.total,
+          paidCount: salary.status === 'paid' ? 1 : 0,
+          totalEmployees: 1
+        })));
+        setStats([
+          { title: 'Tổng Nhân Viên', value: summary.employees.total, icon: Users, color: 'bg-blue-500', change: `${summary.employees.active} đang hoạt động` },
+          { title: 'Đơn Nghỉ Phép', value: summary.leaves.total, icon: Calendar, color: 'bg-yellow-500', change: `${summary.leaves.pending} chờ duyệt` },
+          { title: 'Chi Phí Tháng Này', value: formatCurrency(summary.expenses.total), icon: DollarSign, color: 'bg-green-500', change: `${formatCurrency(summary.expenses.approved)} đã duyệt` },
+          { title: 'Lương Đã Thanh Toán', value: summary.salary.total ? `${Math.round((summary.salary.paid / summary.salary.total) * 100)}%` : '0%', icon: CheckCircle, color: 'bg-purple-500', change: `${summary.salary.paid}/${summary.salary.total}` }
+        ]);
+        const scores = kpis.map((kpi) => Number(kpi.target) > 0 ? Number(kpi.actual) / Number(kpi.target) * 100 : 0);
+        setKpiSummary({
+          overallPercentage: scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0,
+          completedCount: kpis.filter((kpi) => Number(kpi.actual) >= Number(kpi.target)).length,
+          totalEmployees: new Set(kpis.map((kpi) => kpi.employee_id)).size,
+          trend: 'Theo dữ liệu KPI hiện tại'
+        });
+      } catch (error) {
+        console.error('Không thể tải dữ liệu dashboard:', error);
+      }
+    };
+    loadDashboard();
+  }, []);
 
   // Leaves data
-  const leavesData = [
+  const [leavesData, setLeavesData] = useState([
     { id: 1, name: 'Nguyễn Văn A', type: 'Nghỉ phép', date: '10/01 - 12/01', days: 3, status: 'pending' },
     { id: 2, name: 'Trần Thị B', type: 'Nghỉ ốm', date: '08/01 - 09/01', days: 2, status: 'approved' },
     { id: 3, name: 'Lê Văn C', type: 'Nghỉ phép', date: '15/01 - 20/01', days: 6, status: 'pending' },
@@ -46,10 +97,10 @@ const AdminDashboard = () => {
     { id: 8, name: 'Bùi Thị H', type: 'Nghỉ việc riêng', date: '09/01', days: 1, status: 'pending' },
     { id: 9, name: 'Đinh Văn I', type: 'Nghỉ phép', date: '25/01 - 28/01', days: 4, status: 'approved' },
     { id: 10, name: 'Mai Thị K', type: 'Nghỉ ốm', date: '18/01 - 19/01', days: 2, status: 'approved' },
-  ];
+  ]);
 
   // Expenses data
-  const expensesData = [
+  const [expensesData, setExpensesData] = useState([
     { id: 1, category: 'Văn phòng phẩm', amount: 5000000, date: '05/01/2026', status: 'approved' },
     { id: 2, category: 'Điện nước', amount: 8000000, date: '01/01/2026', status: 'approved' },
     { id: 3, category: 'Marketing', amount: 15000000, date: '03/01/2026', status: 'pending' },
@@ -60,10 +111,10 @@ const AdminDashboard = () => {
     { id: 8, category: 'Bảo hiểm', amount: 18000000, date: '10/01/2026', status: 'approved' },
     { id: 9, category: 'Văn phòng phẩm', amount: 6000000, date: '12/01/2026', status: 'pending' },
     { id: 10, category: 'Điện nước', amount: 7500000, date: '15/01/2026', status: 'approved' },
-  ];
+  ]);
 
   // Salary data
-  const salaryData = [
+  const [salaryData, setSalaryData] = useState([
     { id: 1, month: '01/2026', totalSalary: 450000000, paidCount: 13, totalEmployees: 15, status: 'processing' },
     { id: 2, month: '12/2025', totalSalary: 450000000, paidCount: 15, totalEmployees: 15, status: 'paid' },
     { id: 3, month: '11/2025', totalSalary: 450000000, paidCount: 15, totalEmployees: 15, status: 'paid' },
@@ -74,7 +125,7 @@ const AdminDashboard = () => {
     { id: 8, month: '06/2025', totalSalary: 450000000, paidCount: 15, totalEmployees: 15, status: 'paid' },
     { id: 9, month: '05/2025', totalSalary: 450000000, paidCount: 15, totalEmployees: 15, status: 'paid' },
     { id: 10, month: '04/2025', totalSalary: 450000000, paidCount: 15, totalEmployees: 15, status: 'paid' },
-  ];
+  ]);
 
   // State management
   const [leavesSearch, setLeavesSearch] = useState('');
@@ -126,13 +177,6 @@ const AdminDashboard = () => {
   const totalLeavesPages = Math.ceil(filteredLeaves.length / itemsPerPage);
   const totalExpensesPages = Math.ceil(filteredExpenses.length / itemsPerPage);
   const totalSalaryPages = Math.ceil(filteredSalaries.length / itemsPerPage);
-
-  const kpiSummary = {
-    overallPercentage: 102,
-    completedCount: 10,
-    totalEmployees: 12,
-    trend: '+5%'
-  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { 

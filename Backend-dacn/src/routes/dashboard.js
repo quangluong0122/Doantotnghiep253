@@ -1,0 +1,34 @@
+import express from 'express';
+import pool from '../config/database.js';
+import { verifyToken, verifyRole } from '../middleware/auth.js';
+
+const router = express.Router();
+
+router.get('/summary', verifyToken, verifyRole(['admin']), async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [[employees]] = await connection.query("SELECT COUNT(*) AS total, SUM(status = 'active') AS active FROM employees");
+    const [[leaves]] = await connection.query("SELECT COUNT(*) AS total, SUM(status = 'pending') AS pending FROM leaves");
+    const [[expenses]] = await connection.query(
+      `SELECT COALESCE(SUM(amount), 0) AS total, COALESCE(SUM(status IN ('approved', 'paid')), 0) AS approved
+       FROM expenses WHERE DATE_FORMAT(date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')`
+    );
+    const [[salary]] = await connection.query(
+      `SELECT COUNT(*) AS total, SUM(status IN ('paid', 'approved')) AS paid
+       FROM salaries WHERE DATE_FORMAT(effective_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')`
+    );
+    res.json({
+      employees: { total: Number(employees.total || 0), active: Number(employees.active || 0) },
+      leaves: { total: Number(leaves.total || 0), pending: Number(leaves.pending || 0) },
+      expenses: { total: Number(expenses.total || 0), approved: Number(expenses.approved || 0) },
+      salary: { total: Number(salary.total || 0), paid: Number(salary.paid || 0) },
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Không thể tải tổng quan dashboard.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+export default router;

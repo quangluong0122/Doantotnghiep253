@@ -1,6 +1,7 @@
 import express from 'express';
 import pool from '../config/database.js';
 import { verifyToken } from '../middleware/auth.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
@@ -72,6 +73,20 @@ const attendanceStatusNames = {
   'half-day': 'nửa ngày'
 };
 
+const classifyIntent = (query) => {
+  const intents = [
+    { name: 'profile', terms: ['thong tin ca nhan', 'ho so', 'profile', 'toi la ai'] },
+    { name: 'salary', terms: ['luong cua toi', 'luong thang', 'bang luong', 'thu nhap'] },
+    { name: 'attendance', terms: ['cham cong cua toi', 'lich su cham cong', 'di lam', 'gio vao', 'gio ra'] },
+    { name: 'leave-history', terms: ['lich su nghi', 'cac don nghi', 'don nghi gan day'] },
+    { name: 'leave-balance', terms: ['ngay phep', 'con lai', 'phep nam'] },
+    { name: 'kpi', terms: ['kpi', 'hieu suat', 'danh gia hieu suat', 'chi tieu'] },
+    { name: 'policy', terms: ['phuc loi', 'bao hiem', 'quy trinh', 'dong phuc', 'gio lam'] },
+  ];
+  const matches = intents.filter((intent) => intent.terms.some((term) => query.includes(term)));
+  return matches.length === 1 ? matches[0].name : matches.length > 1 ? 'ambiguous' : 'unknown';
+};
+
 const getEmployee = async (connection, userId) => {
   const [rows] = await connection.execute(
     `SELECT id, employee_id, first_name, last_name, email, phone, department,
@@ -82,13 +97,24 @@ const getEmployee = async (connection, userId) => {
   return rows[0];
 };
 
-router.post('/message', verifyToken, async (req, res) => {
+router.post('/message', verifyToken, rateLimit({
+  windowMs: 60_000,
+  max: 20,
+  key: (req) => `user:${req.user.id}`,
+}), async (req, res) => {
   const text = typeof req.body.message === 'string' ? req.body.message.trim() : '';
   if (!text || text.length > 500) {
     return res.status(400).json({ message: 'Câu hỏi phải có từ 1 đến 500 ký tự.' });
   }
 
   const query = normalize(text);
+  const intent = classifyIntent(query);
+  if (intent === 'ambiguous') {
+    return res.json({ reply: 'Bạn muốn hỏi về lương, chấm công, nghỉ phép hay KPI? Vui lòng chọn một nội dung cụ thể.', intent });
+  }
+  if (intent === 'unknown' && text.split(/\s+/).length < 3) {
+    return res.json({ reply: 'Bạn có thể nói rõ hơn, ví dụ: “KPI của tôi tháng này” hoặc “Lịch sử chấm công của tôi”.', intent });
+  }
   let connection;
 
   try {
@@ -99,7 +125,7 @@ router.post('/message', verifyToken, async (req, res) => {
       return res.status(404).json({ message: 'Tài khoản chưa có hồ sơ nhân viên.' });
     }
 
-    if (employee && (query.includes('thông tin cá nhân') || query.includes('ho so') ||
+    if (employee && (intent === 'profile' || query.includes('thông tin cá nhân') || query.includes('ho so') ||
       query.includes('thong tin cua toi') || query.includes('thong tin ca nhan') ||
       query.includes('profile') || query.includes('toi la ai'))) {
       const fullName = `${employee.first_name} ${employee.last_name}`.trim();
@@ -108,7 +134,7 @@ router.post('/message', verifyToken, async (req, res) => {
       });
     }
 
-    if (employee && (query.includes('luong cua toi') || query.includes('luong thang') ||
+    if (employee && (intent === 'salary' || query.includes('luong cua toi') || query.includes('luong thang') ||
       query.includes('bang luong') || query.includes('thu nhap'))) {
       const [rows] = await connection.execute(
         `SELECT effective_date, base_salary, allowances, deductions,
@@ -124,7 +150,7 @@ router.post('/message', verifyToken, async (req, res) => {
       return res.json({ reply: `Ba kỳ lương gần nhất của bạn:\n${salaryText}` });
     }
 
-    if (employee && (query.includes('cham cong cua toi') || query.includes('lich su cham cong') ||
+    if (employee && (intent === 'attendance' || query.includes('cham cong cua toi') || query.includes('lich su cham cong') ||
       query.includes('di lam') || query.includes('gio vao') || query.includes('gio ra'))) {
       const [rows] = await connection.execute(
         `SELECT check_in_date, check_in_time, check_out_time, status
@@ -141,7 +167,7 @@ router.post('/message', verifyToken, async (req, res) => {
       return res.json({ reply: `Mười bản ghi chấm công gần nhất:\n${attendanceText}` });
     }
 
-    if (employee && (query.includes('lich su nghi') || query.includes('cac don nghi') ||
+    if (employee && (intent === 'leave-history' || query.includes('lich su nghi') || query.includes('cac don nghi') ||
       query.includes('don nghi gan day'))) {
       const [rows] = await connection.execute(
         `SELECT id, leave_type, start_date, end_date, reason, status
@@ -157,7 +183,7 @@ router.post('/message', verifyToken, async (req, res) => {
       return res.json({ reply: `Các đơn nghỉ gần đây của bạn:\n${leaveText}` });
     }
 
-    if (query.includes('ngay phep') || query.includes('con lai') || query.includes('phep nam')) {
+    if (intent === 'leave-balance' || query.includes('ngay phep') || query.includes('con lai') || query.includes('phep nam')) {
       if (!employee) {
         return res.json({ reply: 'Tài khoản quản trị không có số ngày phép cá nhân.' });
       }

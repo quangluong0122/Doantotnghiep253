@@ -17,7 +17,7 @@ export const verifyToken = (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, secret);
-    if (!decoded.jti || isTokenRevoked(decoded.jti)) {
+    if (decoded.jti && isTokenRevoked(decoded.jti)) {
       return res.status(401).json({ message: 'Token has been revoked' });
     }
     req.user = decoded;

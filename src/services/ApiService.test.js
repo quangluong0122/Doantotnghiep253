@@ -3,15 +3,19 @@ import ApiService from './ApiService';
 describe('ApiService KPI contract', () => {
   beforeEach(() => {
     global.fetch = jest.fn();
-    localStorage.setItem('token', 'test-token');
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
-    localStorage.clear();
   });
 
   test('createKPI sends the admin KPI payload and parses the response', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      headers: { get: () => 'application/json' },
+      text: async () => JSON.stringify({ success: true, token: 'test-token' }),
+    });
+    await ApiService.login('admin', 'password');
     global.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({ success: true, id: 10 }),

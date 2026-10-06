@@ -54,7 +54,8 @@ router.get('/employee/:employeeId/details', verifyToken, verifyRole(['admin']), 
 router.post('/', verifyToken, verifyRole(['admin']), async (req, res) => {
   const { employee_id, metric, target, actual, period } = req.body;
 
-  if (!employee_id || !metric?.trim() || !period?.trim() || Number(target) <= 0 || Number(actual) < 0) {
+  if (!employee_id || !metric?.trim() || !/^\d{4}-(0[1-9]|1[0-2])$/.test(period || '') ||
+      Number(target) <= 0 || Number(actual) < 0) {
     return res.status(400).json({ message: 'Thông tin KPI không hợp lệ' });
   }
 
@@ -67,7 +68,7 @@ router.post('/', verifyToken, verifyRole(['admin']), async (req, res) => {
     }
     const [result] = await connection.execute(
       'INSERT INTO kpis (employee_id, metric, target, actual, period) VALUES (?, ?, ?, ?, ?)',
-      [employee_id, metric, target, actual, period]
+      [employee_id, metric.trim(), Number(target), Number(actual), period]
     );
     connection.release();
 

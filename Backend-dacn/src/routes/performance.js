@@ -1,0 +1,106 @@
+import express from 'express';
+import pool from '../config/database.js';
+import { verifyToken, verifyRole } from '../middleware/auth.js';
+
+const router = express.Router();
+const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
+
+const calculateScore = (target, actual) => (Number(target) > 0
+  ? Math.round((Number(actual) / Number(target)) * 10000) / 100
+  : 0);
+
+const scoreTrend = (current, previous) => {
+  if (previous === null) return 'insufficient-data';
+  if (current > previous + 2) return 'improving';
+  if (current < previous - 2) return 'declining';
+  return 'stable';
+};
+
+router.get('/summary', verifyToken, verifyRole(['admin']), async (req, res) => {
+  const month = req.query.month || new Date().toISOString().slice(0, 7);
+  if (!monthPattern.test(month)) return res.status(400).json({ message: 'Tháng phải có định dạng YYYY-MM' });
+
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const [rows] = await connection.execute(
+      `SELECT DATE_FORMAT(k.period, '%Y-%m') AS month,
+              AVG((k.actual / NULLIF(k.target, 0)) * 100) AS average_score,
+              COUNT(DISTINCT k.employee_id) AS employees,
+              SUM(k.actual >= k.target) AS completed
+       FROM kpis k
+       GROUP BY DATE_FORMAT(k.period, '%Y-%m')
+       ORDER BY month DESC
+       LIMIT 13`
+    );
+    const current = rows.find((row) => row.month === month);
+    const previous = rows.find((row) => row.month < month);
+    const averageScore = Number(current?.average_score || 0);
+    const previousScore = previous ? Number(previous.average_score) : null;
+    res.json({
+      month,
+      overallPercentage: Math.round(averageScore * 100) / 100,
+      completedCount: Number(current?.completed || 0),
+      totalEmployees: Number(current?.employees || 0),
+      trend: scoreTrend(averageScore, previousScore),
+      trendPercent: previousScore ? Math.round(((averageScore - previousScore) / previousScore) * 10000) / 100 : null,
+      history: rows.reverse().map((row) => ({
+        month: row.month,
+        score: Math.round(Number(row.average_score || 0) * 100) / 100,
+        employees: Number(row.employees || 0),
+        completed: Number(row.completed || 0),
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Không thể tính tổng quan hiệu suất.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+router.get('/employee/:employeeId', verifyToken, async (req, res) => {
+  let connection;
+  try {
+    connection = await pool.getConnection();
+    const employeeFilter = req.user.role === 'admin'
+      ? 'e.id = ?'
+      : 'e.user_id = ?';
+    const [rows] = await connection.execute(
+      `SELECT DATE_FORMAT(k.period, '%Y-%m') AS month, k.metric, k.target, k.actual,
+              e.id AS employee_id, e.employee_id AS employee_code
+       FROM kpis k INNER JOIN employees e ON e.id = k.employee_id
+       WHERE ${employeeFilter}
+       ORDER BY month ASC, k.id ASC`,
+      [req.user.role === 'admin' ? req.params.employeeId : req.user.id]
+    );
+    const monthly = new Map();
+    rows.forEach((row) => {
+      const current = monthly.get(row.month) || { month: row.month, target: 0, actual: 0, factors: [] };
+      current.target += Number(row.target || 0);
+      current.actual += Number(row.actual || 0);
+      current.factors.push({
+        metric: row.metric,
+        score: calculateScore(row.target, row.actual),
+      });
+      monthly.set(row.month, current);
+    });
+    const history = [...monthly.values()].map((item, index, list) => {
+      const score = calculateScore(item.target, item.actual);
+      const previous = index ? calculateScore(list[index - 1].target, list[index - 1].actual) : null;
+      const factors = item.factors.filter((factor) => factor.score < 80).map((factor) => `${factor.metric} đạt ${factor.score}%`);
+      return {
+        ...item,
+        score,
+        trend: scoreTrend(score, previous),
+        factors: factors.length ? factors : ['Kết quả KPI đang đạt mức kỳ vọng'],
+      };
+    });
+    res.json({ employeeId: rows[0]?.employee_id || null, history });
+  } catch (error) {
+    res.status(500).json({ message: 'Không thể tính hiệu suất nhân viên.' });
+  } finally {
+    if (connection) connection.release();
+  }
+});
+
+export default router;

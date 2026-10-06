@@ -100,6 +100,17 @@ const ApiService = {
     return authToken ? { Authorization: `Bearer ${authToken}` } : {};
   },
 
+  getDashboardSummary: async () => {
+    const response = await fetch(`${API_BASE_URL}/dashboard/summary`, { headers: ApiService.getAuthHeader() });
+    return parseResponse(response, 'Không thể tải dashboard');
+  },
+
+  getPerformanceSummary: async (month) => {
+    const suffix = month ? `?month=${encodeURIComponent(month)}` : '';
+    const response = await fetch(`${API_BASE_URL}/performance/summary${suffix}`, { headers: ApiService.getAuthHeader() });
+    return parseResponse(response, 'Không thể tải hiệu suất');
+  },
+
   // Employees
   getEmployees: async () => {
     const response = await fetch(`${API_BASE_URL}/employees`, {
