@@ -24,6 +24,19 @@ CREATE TABLE IF NOT EXISTS work_history (
 	FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS tasks (
+	id INT PRIMARY KEY AUTO_INCREMENT,
+	employee_id INT NOT NULL,
+	title VARCHAR(255) NOT NULL,
+	status ENUM('todo', 'in-progress', 'completed', 'blocked') DEFAULT 'todo',
+	priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+	due_date DATE,
+	completed_at DATETIME,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);
+
 -- ============================================================================
 -- STEP 2: Ensure salary history is supported
 -- ============================================================================
@@ -55,6 +68,7 @@ DEALLOCATE PREPARE drop_salary_index_statement;
 -- AUTO_INCREMENT values, so the IDs used by the seed remain consistent.
 SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE work_history;
+TRUNCATE TABLE tasks;
 TRUNCATE TABLE kpis;
 TRUNCATE TABLE salaries;
 TRUNCATE TABLE attendance;
@@ -241,6 +255,21 @@ VALUES
 (3, 'Month-end close completion', 100, 100, 'Jan 2026', NOW(), NOW()),
 (3, 'Expense report verification', 95, 98, 'Jan 2026', NOW(), NOW()),
 (3, 'Audit preparation readiness', 90, 92, 'Q1 2026', NOW(), NOW());
+
+-- ============================================================================
+-- INSERT TASKS
+-- ============================================================================
+INSERT INTO tasks (employee_id, title, status, priority, due_date, completed_at)
+VALUES
+(1, 'Hoàn thiện API báo cáo hiệu suất', 'completed', 'high', '2026-01-20', '2026-01-19 16:30:00'),
+(1, 'Sửa lỗi phân quyền chatbot', 'in-progress', 'urgent', '2026-02-15', NULL),
+(1, 'Viết kiểm thử cho module KPI', 'todo', 'medium', '2026-03-10', NULL),
+(2, 'Cập nhật chính sách nghỉ phép', 'completed', 'medium', '2026-01-15', '2026-01-14 15:00:00'),
+(2, 'Tổng hợp đánh giá nhân viên quý', 'in-progress', 'high', '2026-02-28', NULL),
+(2, 'Chuẩn bị tài liệu onboarding', 'todo', 'low', '2026-03-20', NULL),
+(3, 'Đối soát báo cáo chi phí tháng', 'completed', 'high', '2026-01-12', '2026-01-11 17:00:00'),
+(3, 'Kiểm tra hóa đơn nhà cung cấp', 'blocked', 'urgent', '2026-02-18', NULL),
+(3, 'Chuẩn bị dữ liệu quyết toán', 'todo', 'medium', '2026-03-25', NULL);
 
 -- ============================================================================
 -- STEP 11: INSERT WORK HISTORY (6 records)

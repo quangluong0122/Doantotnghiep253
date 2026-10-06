@@ -111,6 +111,11 @@ const ApiService = {
     return parseResponse(response, 'Không thể tải hiệu suất');
   },
 
+  getTasks: async () => {
+    const response = await fetch(`${API_BASE_URL}/tasks`, { headers: ApiService.getAuthHeader() });
+    return parseResponse(response, 'Không thể tải lịch sử nhiệm vụ');
+  },
+
   // Employees
   getEmployees: async () => {
     const response = await fetch(`${API_BASE_URL}/employees`, {

@@ -98,6 +98,20 @@ CREATE TABLE IF NOT EXISTS kpis (
   FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
+-- Tasks Table
+CREATE TABLE IF NOT EXISTS tasks (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  employee_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  status ENUM('todo', 'in-progress', 'completed', 'blocked') DEFAULT 'todo',
+  priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
+  due_date DATE,
+  completed_at DATETIME,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);
+
 -- Work History Table
 CREATE TABLE IF NOT EXISTS work_history (
   id INT PRIMARY KEY AUTO_INCREMENT,
@@ -119,6 +133,8 @@ CREATE INDEX idx_attendance_employee_id ON attendance(employee_id);
 CREATE INDEX idx_salaries_employee_id ON salaries(employee_id);
 CREATE INDEX idx_expenses_employee_id ON expenses(employee_id);
 CREATE INDEX idx_kpis_employee_id ON kpis(employee_id);
+CREATE INDEX idx_tasks_employee_id ON tasks(employee_id);
+CREATE INDEX idx_tasks_status_due_date ON tasks(status, due_date);
 CREATE INDEX idx_work_history_employee_id ON work_history(employee_id);
 
 INSERT INTO users (username, password_hash, name, role) 

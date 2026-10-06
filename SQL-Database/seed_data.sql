@@ -14,6 +14,7 @@ USE employee_management_db;
 -- Pass123! = $2a$10$K5ZWx6qKJPDd6.HgPf8dF.J8qKF5VjzKLVJmrRCvKIQ8FEQk5gWEC
 
 DELETE FROM work_history;
+DELETE FROM tasks;
 DELETE FROM kpis;
 DELETE FROM salaries;
 DELETE FROM attendance;
@@ -175,25 +176,40 @@ VALUES
 INSERT INTO kpis (employee_id, metric, target, actual, period, created_at, updated_at)
 VALUES
 -- Employee 1 - IT/Developer KPIs
-(1, 'Code commits per week', 20, 22, 'Q1 2026', NOW(), NOW()),
-(1, 'Bug fixes per month', 15, 18, 'Jan 2026', NOW(), NOW()),
-(1, 'Project completion rate', 90, 95, 'Q1 2026', NOW(), NOW()),
-(1, 'Code review quality score', 85, 88, 'Jan 2026', NOW(), NOW()),
-(1, 'Customer satisfaction', 80, 92, 'Q1 2026', NOW(), NOW()),
+(1, 'Code commits per week', 20, 22, '2026-01', NOW(), NOW()),
+(1, 'Bug fixes per month', 15, 18, '2026-01', NOW(), NOW()),
+(1, 'Project completion rate', 90, 95, '2026-02', NOW(), NOW()),
+(1, 'Code review quality score', 85, 88, '2026-02', NOW(), NOW()),
+(1, 'Customer satisfaction', 80, 92, '2026-03', NOW(), NOW()),
 
 -- Employee 2 - HR Manager KPIs
-(2, 'Recruitment completion rate', 80, 75, 'Jan 2026', NOW(), NOW()),
-(2, 'Employee retention rate', 95, 96, 'Q1 2026', NOW(), NOW()),
-(2, 'Training programs conducted', 4, 5, 'Q1 2026', NOW(), NOW()),
-(2, 'Employee satisfaction score', 75, 82, 'Jan 2026', NOW(), NOW()),
-(2, 'HR response time (hours)', 24, 18, 'Jan 2026', NOW(), NOW()),
+(2, 'Recruitment completion rate', 80, 75, '2026-01', NOW(), NOW()),
+(2, 'Employee retention rate', 95, 96, '2026-02', NOW(), NOW()),
+(2, 'Training programs conducted', 4, 5, '2026-02', NOW(), NOW()),
+(2, 'Employee satisfaction score', 75, 82, '2026-03', NOW(), NOW()),
+(2, 'HR response time (hours)', 24, 18, '2026-03', NOW(), NOW()),
 
 -- Employee 3 - Accountant KPIs
-(3, 'Invoice processing time (days)', 5, 4, 'Jan 2026', NOW(), NOW()),
-(3, 'Financial accuracy rate', 99, 99.5, 'Q1 2026', NOW(), NOW()),
-(3, 'Month-end close completion', 100, 100, 'Jan 2026', NOW(), NOW()),
-(3, 'Expense report verification', 95, 98, 'Jan 2026', NOW(), NOW()),
-(3, 'Audit preparation readiness', 90, 92, 'Q1 2026', NOW(), NOW());
+(3, 'Invoice processing time (days)', 5, 4, '2026-01', NOW(), NOW()),
+(3, 'Financial accuracy rate', 99, 99.5, '2026-02', NOW(), NOW()),
+(3, 'Month-end close completion', 100, 100, '2026-02', NOW(), NOW()),
+(3, 'Expense report verification', 95, 98, '2026-03', NOW(), NOW()),
+(3, 'Audit preparation readiness', 90, 92, '2026-03', NOW(), NOW());
+
+-- ============================================================================
+-- 8. INSERT TASKS
+-- ============================================================================
+INSERT INTO tasks (employee_id, title, status, priority, due_date, completed_at)
+VALUES
+(1, 'Hoàn thiện API báo cáo hiệu suất', 'completed', 'high', '2026-01-20', '2026-01-19 16:30:00'),
+(1, 'Sửa lỗi phân quyền chatbot', 'in-progress', 'urgent', '2026-02-15', NULL),
+(1, 'Viết kiểm thử cho module KPI', 'todo', 'medium', '2026-03-10', NULL),
+(2, 'Cập nhật chính sách nghỉ phép', 'completed', 'medium', '2026-01-15', '2026-01-14 15:00:00'),
+(2, 'Tổng hợp đánh giá nhân viên quý', 'in-progress', 'high', '2026-02-28', NULL),
+(2, 'Chuẩn bị tài liệu onboarding', 'todo', 'low', '2026-03-20', NULL),
+(3, 'Đối soát báo cáo chi phí tháng', 'completed', 'high', '2026-01-12', '2026-01-11 17:00:00'),
+(3, 'Kiểm tra hóa đơn nhà cung cấp', 'blocked', 'urgent', '2026-02-18', NULL),
+(3, 'Chuẩn bị dữ liệu quyết toán', 'todo', 'medium', '2026-03-25', NULL);
 
 -- ============================================================================
 -- 8. INSERT WORK HISTORY

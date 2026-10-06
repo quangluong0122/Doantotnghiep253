@@ -11,6 +11,7 @@ import kpiRouter from './routes/kpi.js';
 import chatbotRouter from './routes/chatbot.js';
 import performanceRouter from './routes/performance.js';
 import dashboardRouter from './routes/dashboard.js';
+import tasksRouter from './routes/tasks.js';
 
 dotenv.config();
 
@@ -59,6 +60,7 @@ app.use('/api/kpi', kpiRouter);
 app.use('/api/chatbot', chatbotRouter);
 app.use('/api/performance', performanceRouter);
 app.use('/api/dashboard', dashboardRouter);
+app.use('/api/tasks', tasksRouter);
 
 app.get('/', (req, res) => {
   res.json({
