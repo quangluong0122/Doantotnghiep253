@@ -12,7 +12,7 @@ import chatbotRouter from './routes/chatbot.js';
 import performanceRouter from './routes/performance.js';
 import dashboardRouter from './routes/dashboard.js';
 import tasksRouter from './routes/tasks.js';
-import { getGeminiStatus as getAiStatus } from './services/gemini.js';
+import { getAiStatus } from './services/aiService.js';
 
 dotenv.config();
 
@@ -76,7 +76,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'API is running' });
 });
 
-app.get('/api/health/gemini', (req, res) => {
+app.get('/api/health/ai', (req, res) => {
   res.json(getAiStatus());
 });
 

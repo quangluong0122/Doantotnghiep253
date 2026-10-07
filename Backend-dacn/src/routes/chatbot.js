@@ -3,7 +3,7 @@ import pool from '../config/database.js';
 import { verifyToken } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 import { searchHrDocuments } from '../knowledgeBase/hrDocuments.js';
-import { askGemini } from '../services/gemini.js';
+import { askAi } from '../services/aiService.js';
 
 const router = express.Router();
 
@@ -279,13 +279,13 @@ router.post('/message', verifyToken, rateLimit({
     const matchedFaq = faq.find((item) => item.keywords.some((keyword) => query.includes(normalize(keyword))));
     if (matchedFaq) return res.json({ reply: matchedFaq.answer, intent });
 
-    const geminiReply = await askGemini({
+    const aiReply = await askAi({
       question: text,
       documents: searchHrDocuments(query),
     });
-    if (geminiReply) {
+    if (aiReply) {
       return res.json({
-        reply: geminiReply,
+        reply: aiReply,
         intent: intent === 'unknown' ? 'ai-assistant' : intent,
         provider: 'groq',
         model: process.env.GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile',

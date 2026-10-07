@@ -2,7 +2,7 @@ import express from 'express';
 import pool from '../config/database.js';
 import { verifyToken, verifyRole } from '../middleware/auth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
-import { getGeminiStatus, predictPerformance } from '../services/gemini.js';
+import { getAiStatus, predictPerformance } from '../services/aiService.js';
 
 const router = express.Router();
 const monthPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -120,7 +120,7 @@ router.get('/employee/:employeeId/prediction', verifyToken, verifyRole(['admin']
       [req.params.employeeId]
     );
     if (!rows.length) return res.status(404).json({ message: 'Chưa có dữ liệu KPI để dự đoán.' });
-    const aiStatus = getGeminiStatus();
+    const aiStatus = getAiStatus();
     if (!aiStatus.configured) {
       return res.status(503).json({ message: 'Trợ lý AI chưa được cấu hình trên máy chủ.' });
     }

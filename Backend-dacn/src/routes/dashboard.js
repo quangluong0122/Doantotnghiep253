@@ -15,7 +15,7 @@ router.get('/summary', verifyToken, verifyRole(['admin']), async (req, res) => {
        FROM expenses WHERE DATE_FORMAT(date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')`
     );
     const [[salary]] = await connection.query(
-      `SELECT COUNT(*) AS total, SUM(status IN ('paid', 'approved')) AS paid
+      `SELECT COUNT(*) AS total
        FROM salaries WHERE DATE_FORMAT(effective_date, '%Y-%m') = DATE_FORMAT(CURDATE(), '%Y-%m')`
     );
     const [[latestKpi]] = await connection.query(
@@ -32,7 +32,7 @@ router.get('/summary', verifyToken, verifyRole(['admin']), async (req, res) => {
       employees: { total: Number(employees.total || 0), active: Number(employees.active || 0) },
       leaves: { total: Number(leaves.total || 0), pending: Number(leaves.pending || 0) },
       expenses: { total: Number(expenses.total || 0), approved: Number(expenses.approved || 0) },
-      salary: { total: Number(salary.total || 0), paid: Number(salary.paid || 0) },
+      salary: { total: Number(salary.total || 0) },
       kpi: {
         month: latestKpi.month || null,
         overallPercentage: Math.round(Number(latestKpi.overall_percentage || 0) * 100) / 100,

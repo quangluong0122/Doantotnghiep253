@@ -6,7 +6,7 @@ const getConfig = () => ({
   model: process.env.GROQ_MODEL?.trim() || DEFAULT_MODEL,
 });
 
-export const getGeminiStatus = () => {
+export const getAiStatus = () => {
   const { apiKey, model } = getConfig();
   return {
     configured: Boolean(apiKey),
@@ -48,7 +48,7 @@ const callGroq = async (prompt, generationConfig = {}) => {
   return extractText(await response.json());
 };
 
-export const askGemini = async ({ question, documents = [], personalData = '' }) => {
+export const askAi = async ({ question, documents = [], personalData = '' }) => {
   const context = documents.length
     ? documents.map((document) => `[${document.title}]\n${document.content}`).join('\n\n')
     : 'Không có tài liệu nội bộ phù hợp.';
