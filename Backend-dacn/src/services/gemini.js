@@ -1,9 +1,9 @@
-const DEFAULT_MODEL = 'gemini-3.8-flash';
-const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_MODEL = 'gpt-4o-mini';
+const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
 
 const getConfig = () => ({
-  apiKey: process.env.GEMINI_API_KEY?.trim(),
-  model: process.env.GEMINI_MODEL?.trim() || DEFAULT_MODEL,
+  apiKey: process.env.OPENAI_API_KEY?.trim(),
+  model: process.env.OPENAI_MODEL?.trim() || DEFAULT_MODEL,
 });
 
 export const getGeminiStatus = () => {
@@ -14,34 +14,35 @@ export const getGeminiStatus = () => {
   };
 };
 
-const extractText = (data) => data?.candidates?.[0]?.content?.parts
-  ?.map((part) => part.text || '')
-  .join('')
-  .trim();
+const extractText = (data) => data?.choices?.[0]?.message?.content?.trim();
 
-const callGemini = async (contents, generationConfig = {}) => {
+const callOpenAI = async (prompt, generationConfig = {}) => {
   const { apiKey, model } = getConfig();
   if (!apiKey) return null;
 
-  const response = await fetch(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
+  const body = {
+    model,
+    messages: [{ role: 'user', content: prompt }],
+    temperature: generationConfig.temperature ?? 0.2,
+    max_tokens: generationConfig.maxOutputTokens ?? 700,
+  };
+
+  if (generationConfig.responseMimeType === 'application/json') {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const response = await fetch(OPENAI_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey,
+      Authorization: `Bearer ${apiKey}`,
     },
-    body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: contents }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 700,
-        ...generationConfig,
-      },
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`Gemini API trả về HTTP ${response.status}: ${errorBody.slice(0, 300)}`);
+    throw new Error(`OpenAI API trả về HTTP ${response.status}: ${errorBody.slice(0, 300)}`);
   }
 
   return extractText(await response.json());
@@ -61,7 +62,7 @@ ${context}
 
 ${personalData ? `DỮ LIỆU CÁ NHÂN ĐÃ ĐƯỢC BACKEND KIỂM SOÁT:\n${personalData}\n` : ''}
 CÂU HỎI: ${question}`;
-  return callGemini(prompt);
+  return callOpenAI(prompt);
 };
 
 export const predictPerformance = async (history) => {
@@ -73,7 +74,7 @@ Ràng buộc: predictedScore từ 0 đến 200; confidence từ 0 đến 1; fact
 
 LỊCH SỬ KPI:
 ${JSON.stringify(history)}`;
-  const text = await callGemini(prompt, {
+  const text = await callOpenAI(prompt, {
     temperature: 0.1,
     maxOutputTokens: 500,
     responseMimeType: 'application/json',

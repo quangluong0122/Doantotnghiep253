@@ -287,13 +287,13 @@ router.post('/message', verifyToken, rateLimit({
       return res.json({
         reply: geminiReply,
         intent: intent === 'unknown' ? 'ai-assistant' : intent,
-        provider: 'google-gemini',
-        model: process.env.GEMINI_MODEL?.trim() || 'gemini-3.8-flash',
+        provider: 'openai',
+        model: process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini',
       });
     }
 
     return res.json({
-      reply: 'Gemini chưa được cấu hình ở máy chủ. Mình chưa đủ thông tin để trả lời chính xác câu hỏi này. Bạn có thể hỏi cụ thể về: hồ sơ cá nhân, bảng lương, lịch sử chấm công, lịch sử nghỉ phép, số ngày phép, trạng thái đơn nghỉ phép (ví dụ LV-12), nhiệm vụ, chính sách nội bộ hoặc thống kê KPI đã ghi nhận.',
+      reply: 'Trợ lý AI chưa được cấu hình ở máy chủ. Mình chưa đủ thông tin để trả lời chính xác câu hỏi này. Bạn có thể hỏi cụ thể về: hồ sơ cá nhân, bảng lương, lịch sử chấm công, lịch sử nghỉ phép, số ngày phép, trạng thái đơn nghỉ phép (ví dụ LV-12), nhiệm vụ, chính sách nội bộ hoặc thống kê KPI đã ghi nhận.',
       intent
     });
   } catch (error) {

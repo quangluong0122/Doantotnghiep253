@@ -120,25 +120,25 @@ router.get('/employee/:employeeId/prediction', verifyToken, verifyRole(['admin']
       [req.params.employeeId]
     );
     if (!rows.length) return res.status(404).json({ message: 'Chưa có dữ liệu KPI để dự đoán.' });
-    const geminiStatus = getGeminiStatus();
-    if (!geminiStatus.configured) {
-      return res.status(503).json({ message: 'Gemini chưa được cấu hình trên máy chủ.' });
+    const aiStatus = getGeminiStatus();
+    if (!aiStatus.configured) {
+      return res.status(503).json({ message: 'Trợ lý AI chưa được cấu hình trên máy chủ.' });
     }
     try {
       const prediction = await predictPerformance(rows);
-      if (!prediction) return res.status(503).json({ message: 'Gemini chưa trả về kết quả dự đoán.' });
+      if (!prediction) return res.status(503).json({ message: 'Trợ lý AI chưa trả về kết quả dự đoán.' });
       return res.json({
         employeeId: Number(req.params.employeeId),
         basedOn: rows,
         prediction,
-        provider: 'google-gemini',
-        model: process.env.GEMINI_MODEL?.trim() || 'gemini-3.8-flash',
+        provider: 'openai',
+        model: process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini',
       });
     } catch (error) {
-      console.error('Gemini performance prediction failed:', error.message);
+      console.error('OpenAI performance prediction failed:', error.message);
       return res.status(502).json({
-        message: 'Gemini không trả được dự đoán. Kiểm tra GEMINI_API_KEY, GEMINI_MODEL và quota trong log backend.',
-        code: 'GEMINI_API_ERROR',
+        message: 'Trợ lý AI không trả được dự đoán. Kiểm tra OPENAI_API_KEY, OPENAI_MODEL và quota trong log backend.',
+        code: 'OPENAI_API_ERROR',
       });
     }
   } catch (error) {
