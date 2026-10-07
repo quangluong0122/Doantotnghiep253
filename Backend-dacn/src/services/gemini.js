@@ -1,9 +1,9 @@
-const DEFAULT_MODEL = 'gpt-4o-mini';
-const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 const getConfig = () => ({
-  apiKey: process.env.OPENAI_API_KEY?.trim(),
-  model: process.env.OPENAI_MODEL?.trim() || DEFAULT_MODEL,
+  apiKey: process.env.GROQ_API_KEY?.trim(),
+  model: process.env.GROQ_MODEL?.trim() || DEFAULT_MODEL,
 });
 
 export const getGeminiStatus = () => {
@@ -16,7 +16,7 @@ export const getGeminiStatus = () => {
 
 const extractText = (data) => data?.choices?.[0]?.message?.content?.trim();
 
-const callOpenAI = async (prompt, generationConfig = {}) => {
+const callGroq = async (prompt, generationConfig = {}) => {
   const { apiKey, model } = getConfig();
   if (!apiKey) return null;
 
@@ -31,7 +31,7 @@ const callOpenAI = async (prompt, generationConfig = {}) => {
     body.response_format = { type: 'json_object' };
   }
 
-  const response = await fetch(OPENAI_ENDPOINT, {
+  const response = await fetch(GROQ_ENDPOINT, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -42,7 +42,7 @@ const callOpenAI = async (prompt, generationConfig = {}) => {
 
   if (!response.ok) {
     const errorBody = await response.text();
-    throw new Error(`OpenAI API trả về HTTP ${response.status}: ${errorBody.slice(0, 300)}`);
+    throw new Error(`Groq API trả về HTTP ${response.status}: ${errorBody.slice(0, 300)}`);
   }
 
   return extractText(await response.json());
@@ -62,7 +62,7 @@ ${context}
 
 ${personalData ? `DỮ LIỆU CÁ NHÂN ĐÃ ĐƯỢC BACKEND KIỂM SOÁT:\n${personalData}\n` : ''}
 CÂU HỎI: ${question}`;
-  return callOpenAI(prompt);
+  return callGroq(prompt);
 };
 
 export const predictPerformance = async (history) => {
@@ -74,7 +74,7 @@ Ràng buộc: predictedScore từ 0 đến 200; confidence từ 0 đến 1; fact
 
 LỊCH SỬ KPI:
 ${JSON.stringify(history)}`;
-  const text = await callOpenAI(prompt, {
+  const text = await callGroq(prompt, {
     temperature: 0.1,
     maxOutputTokens: 500,
     responseMimeType: 'application/json',

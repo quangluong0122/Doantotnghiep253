@@ -131,14 +131,14 @@ router.get('/employee/:employeeId/prediction', verifyToken, verifyRole(['admin']
         employeeId: Number(req.params.employeeId),
         basedOn: rows,
         prediction,
-        provider: 'openai',
-        model: process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini',
+        provider: 'groq',
+        model: process.env.GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile',
       });
     } catch (error) {
-      console.error('OpenAI performance prediction failed:', error.message);
+      console.error('Groq performance prediction failed:', error.message);
       return res.status(502).json({
-        message: 'Trợ lý AI không trả được dự đoán. Kiểm tra OPENAI_API_KEY, OPENAI_MODEL và quota trong log backend.',
-        code: 'OPENAI_API_ERROR',
+        message: 'Trợ lý AI không trả được dự đoán. Kiểm tra GROQ_API_KEY, GROQ_MODEL và quota trong log backend.',
+        code: 'GROQ_API_ERROR',
       });
     }
   } catch (error) {

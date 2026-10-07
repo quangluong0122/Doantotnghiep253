@@ -287,8 +287,8 @@ router.post('/message', verifyToken, rateLimit({
       return res.json({
         reply: geminiReply,
         intent: intent === 'unknown' ? 'ai-assistant' : intent,
-        provider: 'openai',
-        model: process.env.OPENAI_MODEL?.trim() || 'gpt-4o-mini',
+        provider: 'groq',
+        model: process.env.GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile',
       });
     }
 

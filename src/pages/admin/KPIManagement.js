@@ -90,7 +90,7 @@ const KPIManagement = () => {
       const [details, predictionResult] = await Promise.all([
         ApiService.getKpiDetails(kpi.employee_id),
         ApiService.getPerformancePrediction(kpi.employee_id).catch((predictionRequestError) => ({
-          error: predictionRequestError.message || 'Không thể tải dự đoán GPT-4o mini.',
+          error: predictionRequestError.message || 'Không thể tải dự đoán Llama 3.3 (Groq).',
         })),
       ]);
       setHistory(details);
@@ -270,13 +270,13 @@ const KPIManagement = () => {
                 </table>
               </div>
               {getRecordedSummary() && <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-                <h3 className="font-bold text-blue-900">Dự đoán hiệu suất tương lai bằng GPT-4o mini</h3>
+                <h3 className="font-bold text-blue-900">Dự đoán hiệu suất tương lai bằng Llama 3.3 (Groq)</h3>
                 {prediction ? <>
                   <p className="mt-2 text-blue-900">Kỳ tiếp theo dự kiến đạt <strong>{prediction.predictedScore.toFixed(1)}%</strong>.</p>
                   <p className="mt-1 text-sm text-blue-700">Xu hướng: {prediction.trend} · Độ tin cậy: {(prediction.confidence * 100).toFixed(0)}%</p>
                   <p className="mt-1 text-sm text-blue-700">{prediction.explanation}</p>
                   {prediction.factors?.length > 0 && <p className="mt-1 text-sm text-blue-700">Yếu tố: {prediction.factors.join('; ')}</p>}
-                </> : <p className="mt-2 text-sm text-blue-700">{predictionError || 'Chưa có dự đoán từ GPT-4o mini.'}</p>}
+                </> : <p className="mt-2 text-sm text-blue-700">{predictionError || 'Chưa có dự đoán từ Llama 3.3 (Groq).'}</p>}
                 <p className="mt-2 text-xs text-blue-700">Dự đoán chỉ mang tính tham khảo, dựa trên dữ liệu KPI đã ghi nhận.</p>
               </div>}
             </>}
