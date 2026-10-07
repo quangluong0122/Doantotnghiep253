@@ -1,4 +1,4 @@
-const DEFAULT_MODEL = 'llama-3.3-70b-versatile';
+const DEFAULT_MODEL = 'qwen/qwen3.8-27b';
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 const getConfig = () => ({

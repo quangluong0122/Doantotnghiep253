@@ -132,7 +132,7 @@ router.get('/employee/:employeeId/prediction', verifyToken, verifyRole(['admin']
         basedOn: rows,
         prediction,
         provider: 'groq',
-        model: process.env.GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL?.trim() || 'qwen/qwen3.8-27b',
       });
     } catch (error) {
       console.error('Groq performance prediction failed:', error.message);

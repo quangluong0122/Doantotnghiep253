@@ -288,7 +288,7 @@ router.post('/message', verifyToken, rateLimit({
         reply: aiReply,
         intent: intent === 'unknown' ? 'ai-assistant' : intent,
         provider: 'groq',
-        model: process.env.GROQ_MODEL?.trim() || 'llama-3.3-70b-versatile',
+        model: process.env.GROQ_MODEL?.trim() || 'qwen/qwen3.8-27b',
       });
     }
 
